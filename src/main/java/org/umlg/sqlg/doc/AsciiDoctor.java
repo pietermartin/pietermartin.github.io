@@ -23,7 +23,7 @@ public class AsciiDoctor {
         Asciidoctor asciidoctor = create();
         try {
             File file = new File("src/main/asciidoc/sqlg.adoc");
-            File html = new File("src/main/html/sqlg.html");
+            File html = new File("index.html");
             Attributes attributes = new Attributes();
             attributes.setBackend("html5");
             attributes.setStyleSheetName("asciidoctor-default.css");
