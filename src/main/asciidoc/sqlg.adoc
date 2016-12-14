@@ -12,9 +12,9 @@ Sqlg primary challenge is to reduce latency by combining TinkerPop 'http://tinke
 into as few as possible database calls. The fine grained nature of graph traversals makes this crucial else the remote
 call latency has a severe performance impact.
 
-Additionally for Postgresql it has various bulk modes to reduce latency when modifying the graph.
+Additionally for Postgresql Sqlg supports various bulk modes to reduce latency when modifying the graph.
 
-
-
+[NOTE]
+Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded in the jvm.
 
 == ETL Process
