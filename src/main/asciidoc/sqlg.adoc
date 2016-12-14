@@ -17,57 +17,399 @@ Additionally for Postgresql Sqlg supports various bulk modes to reduce latency w
 [NOTE]
 Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded in the jvm.
 
-=== TinkerPop supported features
+== TinkerPop supported features
 
 Sqlg version 1.3.3 runs on TinkerPop 3.2.3
 
 Sqlg passes TinkerPop's `StructureStandardSuite` and `ProcessStandardSuite` test suites.
 
-Graph Features **not** implemented.
+.Graph Features *not* implemented.
 
-* Computer
-* ThreadedTransactions
-* Variables
+- Computer
+- ThreadedTransactions
+- Variables
 
-Vertex Features **not** implemented.
+.Vertex Features *not* implemented.
 
-* MultiProperties
-* MetaProperties
-* UserSuppliedIds
-* NumericIds
-* StringIds
-* UuidIds
-* CustomIds
-* AnyIds
+- MultiProperties
+- MetaProperties
+- UserSuppliedIds
+- NumericIds
+- StringIds
+- UuidIds
+- CustomIds
+- AnyIds
 
-Edge Features **not** implemented.
+.Edge Features **not** implemented.
 
-* UserSuppliedIds
-* NumericIds
-* StringIds
-* UuidIds
-* CustomIds
-* AnyIds
+- UserSuppliedIds
+- NumericIds
+- StringIds
+- UuidIds
+- CustomIds
+- AnyIds
 
-Vertex property features **not** implemented.
+.Vertex property features *not* implemented.
 
-* AddProperty
-* RemoveProperty
-* UserSuppliedIds
-* NumericIds
-* StringIds
-* UuidIds
-* CustomIds
-* AnyIds
-* MapValues
-* MixedListValues
-* SerializableValues
-* UniformListValues
+- AddProperty
+- RemoveProperty
+- UserSuppliedIds
+- NumericIds
+- StringIds
+- UuidIds
+- CustomIds
+- AnyIds
+- MapValues
+- MixedListValues
+- SerializableValues
+- UniformListValues
 
-Edge property feature **not** implemented.
+.Edge property feature *not* implemented.
 
-* MapValues
-* MixedListValues
-* SerializableValues
-* UniformListValues
+- MapValues
+- MixedListValues
+- SerializableValues
+- UniformListValues
+
+== Getting Started
+
+=== Maven coordinates
+
+.Postgresql
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-postgres</artifactId>
+     <version>1.3.3</version>
+ </dependency>
+
+.HSQLDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-hsqldb</artifactId>
+     <version>1.3.3</version>
+ </dependency>
+
+.H2
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-h2</artifactId>
+     <version>1.3.3</version>
+ </dependency>
+
+This will include `gremlin-groovy`. If you have no need for that then use the following coordinates.
+
+.Postgresql
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-postgres-dialect</artifactId>
+     <version>1.3.3</version>
+ </dependency>
+
+.HSQLDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-hsqldb-dialect</artifactId>
+     <version>1.3.3</version>
+ </dependency>
+
+.H2
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-h2-dialect</artifactId>
+     <version>1.3.3</version>
+ </dependency>
+
+=== Running
+
+Sqlg runs as a singleton that can be shared among multiple threads. You instantiate Sqlg using the standard
+TinkerPop static constructors.
+
+* `SqlgGraph.open(final Configuration configuration)`
+* `SqlgGraph.open(final String pathToSqlgProperties)`
+
+The configuration object requires the following properties.
+
+.Postgresql
+ jdbc.url=jdbc:postgresql://localhost:5432/yourdb
+ jdbc.username=postgres
+ jdbc.password=******
+
+.HSQLDB
+ jdbc.url=jdbc:hsqldb:file:/tmp/yourdb
+ jdbc.username=SA
+ jdbc.password=
+
+.H2
+ jdbc.url=jdbc:h2:file:target/tmp/yourdb
+ jdbc.username=SA
+ jdbc.password=
+
+In the case of Postgresql the database must already exist.
+
+=== Tests
+
+If you want to run the TinkerPop tests on Postgresql you need to create the various databases that are used.
+
+.These are,
+ g1
+ g2
+ readGraph
+ standard
+ temp
+ temp1
+ temp2
+ subgraph
+ prototype
+ target
+
+=== Gremlin Console
+
+.Postgresql
+ [pieter@pieter-laptop bin]$ ./gremlin.sh
+          \,,,/
+          (o o)
+ -----oOOo-(3)-oOOo-----
+ plugin activated: tinkerpop.server
+ plugin activated: tinkerpop.utilities
+ plugin activated: tinkerpop.tinkergraph
+ gremlin> :install org.umlg sqlg-postgres 1.3.3
+ log4j:WARN No appenders could be found for logger (org.apache.tinkerpop.gremlin.groovy.util.DependencyGrabber).
+ log4j:WARN Please initialize the log4j system properly.
+ log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+ ==>Loaded: [org.umlg, sqlg-postgres, 1.3.3]
+ gremlin> :plugin list
+ ==>tinkerpop.server[active]
+ ==>tinkerpop.gephi
+ ==>tinkerpop.utilities[active]
+ ==>tinkerpop.sugar
+ ==>tinkerpop.credentials
+ ==>tinkerpop.tinkergraph[active]
+ ==>sqlg.postgres
+ gremlin> :plugin use sqlg.postgres
+ ==>sqlg.postgres activated
+ gremlin> graph = SqlgGraph.open('pathTo/sqlg.properties')
+ ==>sqlggraph[SqlGraph]
+ gremlin> g = graph.traversal()
+ ==>sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb), standard]
+ gremlin> graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
+ ==>null
+ gremlin> g.V().count()
+ ==>808
+ gremlin>
+
+.HSQLDB
+ [pieter@pieter-laptop bin]$ ./gremlin.sh
+
+          \,,,/
+          (o o)
+ -----oOOo-(3)-oOOo-----
+ plugin activated: tinkerpop.server
+ plugin activated: tinkerpop.utilities
+ plugin activated: tinkerpop.tinkergraph
+ gremlin> :install org.umlg sqlg-hsqldb 1.3.3
+ log4j:WARN No appenders could be found for logger (org.apache.tinkerpop.gremlin.groovy.util.DependencyGrabber).
+ log4j:WARN Please initialize the log4j system properly.
+ log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+ ==>Loaded: [org.umlg, sqlg-hsqldb, 1.3.3]
+ gremlin> :plugin list
+ ==>tinkerpop.server[active]
+ ==>tinkerpop.gephi
+ ==>tinkerpop.utilities[active]
+ ==>tinkerpop.sugar
+ ==>tinkerpop.credentials
+ ==>tinkerpop.tinkergraph[active]
+ ==>sqlg.hsqldb
+ gremlin> :plugin use sqlg.hsqldb
+ ==>sqlg.hsqldb activated
+ gremlin> graph = SqlgGraph.open('pathTo/sqlg.properties')
+ ==>sqlggraph[SqlGraph]
+ gremlin> g = graph.traversal()
+ ==>sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:hsqldb:file:src/test/db/sqlgraphdb), standard]
+ gremlin> graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
+ ==>null
+ gremlin> g.V().count()
+ ==>808
+ gremlin>
+
+== Data types
+
+.Table Data types
+|===
+|Java |Postgresql |HSQLDB |H2
+
+|Boolean
+|BOOLEAN
+|BOOLEAN
+|BOOLEAN
+
+|Byte
+|*Not supported*
+|TINYINT
+|TINYINT
+
+|Short
+|SMALLINT
+|SMALLINT
+|SMALLINT
+
+|Integer
+|INTEGER
+|INTEGER
+|INT
+
+|Long
+|BIGINT
+|BIGINT
+|BIGINT
+
+|Float
+|REAL
+|*Not supported*
+|REAL
+
+|Double
+|DOUBLE PRECISION
+|DOUBLE
+|DOUBLE
+
+|String
+|TEXT
+|LONGVARCHAR
+|VARCHAR
+
+|Boolean[]
+|BOOLEAN[]
+|BOOLEAN ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|Byte[]
+|BYTEA
+|LONGVARBINARY
+|BINARY
+
+|Short[]
+|SMALLINT[]
+|SMALLINT ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|Integer[]
+|INTEGER[]
+|INTEGER ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|Long[]
+|BIGINT[]
+|BIGINT ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|Float[]
+|REAL[]
+|*Not supported*
+|ARRAY
+
+|Double[]
+|DOUBLE PRECISION[]
+|DOUBLE ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|String[]
+|TEXT[]
+|LONGVARCHAR ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|java.time.LocalDateTime
+|TIMESTAMP WITH TIME ZONE
+|TIMESTAMP WITH TIME ZONE
+|TIMESTAMP
+
+|java.time.LocalDate
+|DATE
+|DATE
+|DATE
+
+|java.time.LocalTime
+|TIME WITH TIME ZONE
+|TIME WITH TIME ZONE
+|TIME
+
+|java.time.ZonedDateTime
+|TIMESTAMP WITH TIME ZONE, TEXT
+|TIMESTAMP WITH TIME ZONE, LONGVARCHAR
+|TIMESTAMP, VARCHAR
+
+|java.time.Period
+|INTEGER, INTEGER, INTEGER
+|INTEGER, INTEGER, INTEGER
+|INT, INT, INT
+
+|java.time.Duration
+|BIGINT, INTEGER
+|BIGINT, INTEGER
+|BIGINT, INT
+
+|java.time.LocalDateTime[]
+|TIMESTAMP WITH TIME ZONE[]
+|TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|java.time.LocalDate[]
+|DATE[]
+|DATE ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|java.time.LocalTime[]
+|TIME WITH TIME ZONE ARRAY DEFAULT ARRAY[]
+|TIME WITH TIME ZONE[]
+|ARRAY
+
+|java.time.ZonedDateTime[]
+|TIMESTAMP WITH TIME ZONE[], TEXT[]
+|TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[], LONGVARCHAR ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|java.time.Period[]
+|INTEGER[], INTEGER[], INTEGER[]
+|INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|java.time.Duration[]
+|BIGINT[], INTEGER[]
+|BIGINT ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]
+|ARRAY
+
+|com.fasterxml.jackson.databind.JsonNode
+|JSONB
+|*Not supported*
+|*Not supported*
+
+|com.fasterxml.jackson.databind.JsonNode[]
+|JSONB[]
+|*Not supported*
+|*Not supported*
+
+|org.postgis.Point
+|geometry(POINT)
+|*Not supported*
+|*Not supported*
+
+|org.umlg.sqlg.gis.GeographyPoint
+|geography(POINT, 4326)
+|*Not supported*
+|*Not supported*
+
+|org.postgis.LineString
+|geometry(LINESTRING)
+|*Not supported*
+|*Not supported*
+
+|org.postgis.Polygon
+|geometry(POLYGON)
+|*Not supported*
+|*Not supported*
+
+|org.umlg.sqlg.gis.GeographyPolygon
+|geography(POLYGON, 4326)
+|*Not supported*
+|*Not supported*
+|===
 

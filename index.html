@@ -22,7 +22,16 @@
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#_introduction">Introduction</a></li>
-<li><a href="#_etl_process">ETL Process</a></li>
+<li><a href="#_tinkerpop_supported_features">TinkerPop supported features</a></li>
+<li><a href="#_getting_started">Getting Started</a>
+<ul class="sectlevel2">
+<li><a href="#_maven_coordinates">Maven coordinates</a></li>
+<li><a href="#_running">Running</a></li>
+<li><a href="#_tests">Tests</a></li>
+<li><a href="#_gremlin_console">Gremlin Console</a></li>
+</ul>
+</li>
+<li><a href="#_data_types">Data types</a></li>
 </ul>
 </div>
 </div>
@@ -44,21 +53,614 @@ into as few as possible database calls. The fine grained nature of graph travers
 call latency has a severe performance impact.</p>
 </div>
 <div class="paragraph">
-<p>Additionally for Postgresql it has various bulk modes to reduce latency when modifying the graph.</p>
+<p>Additionally for Postgresql Sqlg supports various bulk modes to reduce latency when modifying the graph.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded in the jvm.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_etl_process">ETL Process</h2>
+<h2 id="_tinkerpop_supported_features">TinkerPop supported features</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>Sqlg version 1.3.3 runs on TinkerPop 3.2.3</p>
+</div>
+<div class="paragraph">
+<p>Sqlg passes TinkerPop&#8217;s <code>StructureStandardSuite</code> and <code>ProcessStandardSuite</code> test suites.</p>
+</div>
+<div class="ulist">
+<div class="title">Graph Features <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>Computer</p>
+</li>
+<li>
+<p>ThreadedTransactions</p>
+</li>
+<li>
+<p>Variables</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Vertex Features <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>MultiProperties</p>
+</li>
+<li>
+<p>MetaProperties</p>
+</li>
+<li>
+<p>UserSuppliedIds</p>
+</li>
+<li>
+<p>NumericIds</p>
+</li>
+<li>
+<p>StringIds</p>
+</li>
+<li>
+<p>UuidIds</p>
+</li>
+<li>
+<p>CustomIds</p>
+</li>
+<li>
+<p>AnyIds</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Edge Features <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>UserSuppliedIds</p>
+</li>
+<li>
+<p>NumericIds</p>
+</li>
+<li>
+<p>StringIds</p>
+</li>
+<li>
+<p>UuidIds</p>
+</li>
+<li>
+<p>CustomIds</p>
+</li>
+<li>
+<p>AnyIds</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Vertex property features <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>AddProperty</p>
+</li>
+<li>
+<p>RemoveProperty</p>
+</li>
+<li>
+<p>UserSuppliedIds</p>
+</li>
+<li>
+<p>NumericIds</p>
+</li>
+<li>
+<p>StringIds</p>
+</li>
+<li>
+<p>UuidIds</p>
+</li>
+<li>
+<p>CustomIds</p>
+</li>
+<li>
+<p>AnyIds</p>
+</li>
+<li>
+<p>MapValues</p>
+</li>
+<li>
+<p>MixedListValues</p>
+</li>
+<li>
+<p>SerializableValues</p>
+</li>
+<li>
+<p>UniformListValues</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Edge property feature <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>MapValues</p>
+</li>
+<li>
+<p>MixedListValues</p>
+</li>
+<li>
+<p>SerializableValues</p>
+</li>
+<li>
+<p>UniformListValues</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_getting_started">Getting Started</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_maven_coordinates">Maven coordinates</h3>
+<div class="literalblock">
+<div class="title">Postgresql</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-postgres&lt;/artifactId&gt;
+    &lt;version&gt;1.3.3&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">HSQLDB</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-hsqldb&lt;/artifactId&gt;
+    &lt;version&gt;1.3.3&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">H2</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-h2&lt;/artifactId&gt;
+    &lt;version&gt;1.3.3&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will include <code>gremlin-groovy</code>. If you have no need for that then use the following coordinates.</p>
+</div>
+<div class="literalblock">
+<div class="title">Postgresql</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-postgres-dialect&lt;/artifactId&gt;
+    &lt;version&gt;1.3.3&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">HSQLDB</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-hsqldb-dialect&lt;/artifactId&gt;
+    &lt;version&gt;1.3.3&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">H2</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-h2-dialect&lt;/artifactId&gt;
+    &lt;version&gt;1.3.3&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_running">Running</h3>
+<div class="paragraph">
+<p>Sqlg runs as a singleton that can be shared among multiple threads. You instantiate Sqlg using the standard
+TinkerPop static constructors.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>SqlgGraph.open(final Configuration configuration)</code></p>
+</li>
+<li>
+<p><code>SqlgGraph.open(final String pathToSqlgProperties)</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The configuration object requires the following properties.</p>
+</div>
+<div class="literalblock">
+<div class="title">Postgresql</div>
+<div class="content">
+<pre>jdbc.url=jdbc:postgresql://localhost:5432/yourdb
+jdbc.username=postgres
+jdbc.password=******</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">HSQLDB</div>
+<div class="content">
+<pre>jdbc.url=jdbc:hsqldb:file:/tmp/yourdb
+jdbc.username=SA
+jdbc.password=</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">H2</div>
+<div class="content">
+<pre>jdbc.url=jdbc:h2:file:target/tmp/yourdb
+jdbc.username=SA
+jdbc.password=</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the case of Postgresql the database must already exist.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tests">Tests</h3>
+<div class="paragraph">
+<p>If you want to run the TinkerPop tests on Postgresql you need to create the various databases that are used.</p>
+</div>
+<div class="literalblock">
+<div class="title">These are,</div>
+<div class="content">
+<pre>g1
+g2
+readGraph
+standard
+temp
+temp1
+temp2
+subgraph
+prototype
+target</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_gremlin_console">Gremlin Console</h3>
+<div class="literalblock">
+<div class="title">Postgresql</div>
+<div class="content">
+<pre>[pieter@pieter-laptop bin]$ ./gremlin.sh
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin&gt; :install org.umlg sqlg-postgres 1.3.3
+log4j:WARN No appenders could be found for logger (org.apache.tinkerpop.gremlin.groovy.util.DependencyGrabber).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+==&gt;Loaded: [org.umlg, sqlg-postgres, 1.3.3]
+gremlin&gt; :plugin list
+==&gt;tinkerpop.server[active]
+==&gt;tinkerpop.gephi
+==&gt;tinkerpop.utilities[active]
+==&gt;tinkerpop.sugar
+==&gt;tinkerpop.credentials
+==&gt;tinkerpop.tinkergraph[active]
+==&gt;sqlg.postgres
+gremlin&gt; :plugin use sqlg.postgres
+==&gt;sqlg.postgres activated
+gremlin&gt; graph = SqlgGraph.open('pathTo/sqlg.properties')
+==&gt;sqlggraph[SqlGraph]
+gremlin&gt; g = graph.traversal()
+==&gt;sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb), standard]
+gremlin&gt; graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
+==&gt;null
+gremlin&gt; g.V().count()
+==&gt;808
+gremlin&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">HSQLDB</div>
+<div class="content">
+<pre>[pieter@pieter-laptop bin]$ ./gremlin.sh</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin&gt; :install org.umlg sqlg-hsqldb 1.3.3
+log4j:WARN No appenders could be found for logger (org.apache.tinkerpop.gremlin.groovy.util.DependencyGrabber).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+==&gt;Loaded: [org.umlg, sqlg-hsqldb, 1.3.3]
+gremlin&gt; :plugin list
+==&gt;tinkerpop.server[active]
+==&gt;tinkerpop.gephi
+==&gt;tinkerpop.utilities[active]
+==&gt;tinkerpop.sugar
+==&gt;tinkerpop.credentials
+==&gt;tinkerpop.tinkergraph[active]
+==&gt;sqlg.hsqldb
+gremlin&gt; :plugin use sqlg.hsqldb
+==&gt;sqlg.hsqldb activated
+gremlin&gt; graph = SqlgGraph.open('pathTo/sqlg.properties')
+==&gt;sqlggraph[SqlGraph]
+gremlin&gt; g = graph.traversal()
+==&gt;sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:hsqldb:file:src/test/db/sqlgraphdb), standard]
+gremlin&gt; graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
+==&gt;null
+gremlin&gt; g.V().count()
+==&gt;808
+gremlin&gt;</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_data_types">Data types</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all spread">
+<caption class="title">Table 1. Table Data types</caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Java</th>
+<th class="tableblock halign-left valign-top">Postgresql</th>
+<th class="tableblock halign-left valign-top">HSQLDB</th>
+<th class="tableblock halign-left valign-top">H2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Byte</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Short</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Long</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Float</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REAL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REAL</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Double</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE PRECISION</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TEXT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Byte[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BYTEA</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARBINARY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BINARY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Short[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Integer[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Long[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Float[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REAL[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Double[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE PRECISION[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TEXT[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARCHAR ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDateTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.ZonedDateTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE, TEXT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE, LONGVARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP, VARCHAR</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Period</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER, INTEGER, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER, INTEGER, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INT, INT, INT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Duration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDateTime[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDate[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalTime[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.ZonedDateTime[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE[], TEXT[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[], LONGVARCHAR ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Period[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER[], INTEGER[], INTEGER[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Duration[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT[], INTEGER[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">com.fasterxml.jackson.databind.JsonNode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSONB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">com.fasterxml.jackson.databind.JsonNode[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSONB[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.postgis.Point</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geometry(POINT)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.umlg.sqlg.gis.GeographyPoint</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geography(POINT, 4326)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.postgis.LineString</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geometry(LINESTRING)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.postgis.Polygon</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geometry(POLYGON)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.umlg.sqlg.gis.GeographyPolygon</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geography(POLYGON, 4326)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
 Version 1.3.3<br>
-Last updated 2016-12-14 18:29:14 +02:00
+Last updated 2016-12-14 21:32:41 +02:00
 </div>
 </div>
 </body>
