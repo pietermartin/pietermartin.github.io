@@ -17,4 +17,57 @@ Additionally for Postgresql Sqlg supports various bulk modes to reduce latency w
 [NOTE]
 Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded in the jvm.
 
-== ETL Process
+=== TinkerPop supported features
+
+Sqlg version 1.3.3 runs on TinkerPop 3.2.3
+
+Sqlg passes TinkerPop's `StructureStandardSuite` and `ProcessStandardSuite` test suites.
+
+Graph Features **not** implemented.
+
+* Computer
+* ThreadedTransactions
+* Variables
+
+Vertex Features **not** implemented.
+
+* MultiProperties
+* MetaProperties
+* UserSuppliedIds
+* NumericIds
+* StringIds
+* UuidIds
+* CustomIds
+* AnyIds
+
+Edge Features **not** implemented.
+
+* UserSuppliedIds
+* NumericIds
+* StringIds
+* UuidIds
+* CustomIds
+* AnyIds
+
+Vertex property features **not** implemented.
+
+* AddProperty
+* RemoveProperty
+* UserSuppliedIds
+* NumericIds
+* StringIds
+* UuidIds
+* CustomIds
+* AnyIds
+* MapValues
+* MixedListValues
+* SerializableValues
+* UniformListValues
+
+Edge property feature **not** implemented.
+
+* MapValues
+* MixedListValues
+* SerializableValues
+* UniformListValues
+
