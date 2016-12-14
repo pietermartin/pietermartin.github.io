@@ -1,0 +1,20 @@
+Sqlg Documentation
+==================
+Pieter Martin
+v1.3.3, December 2016:
+
+*Sqlg* is a implementation of 'http://tinkerpop.apache.org/[Apache TinkerPop]' on a 'http://en.wikipedia.org/wiki/Relational_database_management_system[RDBMS]'.
+Currently 'http://www.postgresql.org/[Postgresql]', 'http://hsqldb.org/[HSQLDB]', and 'http://h2database.com[H2 database]' are supported.
+
+== Introduction
+
+Sqlg primary challenge is to reduce latency by combining TinkerPop 'http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps[steps]'
+into as few as possible database calls. The fine grained nature of graph traversals makes this crucial else the remote
+call latency has a severe performance impact.
+
+Additionally for Postgresql it has various bulk modes to reduce latency when modifying the graph.
+
+
+
+
+== ETL Process

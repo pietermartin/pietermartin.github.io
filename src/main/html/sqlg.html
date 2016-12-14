@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.4">
+<meta name="author" content="Pieter Martin">
+<title>Sqlg Documentation</title>
+<link rel="stylesheet" href="./asciidoctor-default.css">
+</head>
+<body class="article toc2 toc-left">
+<div id="header">
+<h1>Sqlg Documentation</h1>
+<div class="details">
+<span id="author" class="author">Pieter Martin</span><br>
+<span id="revnumber">version 1.3.3,</span>
+<span id="revdate">December 2016</span>
+<br><span id="revremark"></span>
+</div>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_introduction">Introduction</a></li>
+<li><a href="#_etl_process">ETL Process</a></li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Sqlg</strong> is a implementation of <em><a href="http://tinkerpop.apache.org/">Apache TinkerPop</a></em> on a <em><a href="http://en.wikipedia.org/wiki/Relational_database_management_system">RDBMS</a></em>.
+Currently <em><a href="http://www.postgresql.org/">Postgresql</a></em>, <em><a href="http://hsqldb.org/">HSQLDB</a></em>, and <em><a href="http://h2database.com">H2 database</a></em> are supported.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_introduction">Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Sqlg primary challenge is to reduce latency by combining TinkerPop <em><a href="http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps">steps</a></em>
+into as few as possible database calls. The fine grained nature of graph traversals makes this crucial else the remote
+call latency has a severe performance impact.</p>
+</div>
+<div class="paragraph">
+<p>Additionally for Postgresql it has various bulk modes to reduce latency when modifying the graph.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_etl_process">ETL Process</h2>
+<div class="sectionbody">
+
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Version 1.3.3<br>
+Last updated 2016-12-14 18:29:14 +02:00
+</div>
+</div>
+</body>
+</html>
