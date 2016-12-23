@@ -413,3 +413,96 @@ If you want to run the TinkerPop tests on Postgresql you need to create the vari
 |*Not supported*
 |===
 
+[NOTE]
+`java.time.LocalTime` drops the nano second precision.
+
+== Architecture
+
+With the coming of vertex labels to TinkerPop the mapping of TinkerPop's graph semantics to that of a RDBMS became natural and useful.
+
+=== Vertex tables
+Every unique vertex label maps to a table. Vertex tables are prefixed with a `V_`. i.e. `V_Person`. The vertex table
+stores the vertex's properties.
+
+=== Edge tables
+Every unique edge label maps to a table. Edge tables are prefixed with a `E_`. i.e. `E_friend`. The edge table stores
+each edge's adjacent vertex ids and the edge properties. The column corresponding to each adjacent vertex id (`IN` and `OUT`)
+has a foreign key to the adjacent vertex's table. The foreign key is optional, instead just an index on the adjacent vertex id
+can be used.
+
+From a rdbms' perspective each edge table is the classic `many to many` join table between vertices.
+
+=== TinkerPop-modern
+
+Taken from 'http://tinkerpop.apache.org/docs/current/reference/#intro[TinkerPop]'
+
+image:src/main/images/sqlg/tinkerpop-modern-graph.png[image of tinkerpop-classic]
+
+==== ER Diagram
+
+image:src/main/images/sqlg/tinkerpop-modern-er.png[image of tinkerpop-classic]
+
+==== V_person
+
+image:src/main/images/sqlg/V_person.png[image of tinkerpop-classic]
+
+==== V_software
+
+image:src/main/images/sqlg/V_software.png[image of tinkerpop-classic]
+
+==== E_knows
+
+image:src/main/images/sqlg/E_knows.png[image of tinkerpop-classic]
+
+==== E_created
+
+image:src/main/images/sqlg/E_created.png[image of tinkerpop-classic]
+
+=== Namespacing and Schemas
+
+Many RDBMS databases have the notion of a `schema` as a namespace for tables. Sqlg supports schemas
+for vertex labels. Distinct schemas for edge tables are unnecessary as edge tables are created in the schema of the adjacent `out` vertex.
+By default schemas for vertex tables go into the underlying databases' default schema. For Postgresql, hsqldb and H2 this
+is the `public` schema.
+
+To specify the schema for a label Sqlg uses the dot `.` notation.
+
+    Vertex john = this.sqlgGraph.addVertex(T.label, "manager", "name", "john");
+    Vertex palace1 = this.sqlgGraph.addVertex(T.label, "continent.house", "name", "palace1");
+    Vertex corrola = this.sqlgGraph.addVertex(T.label, "fleet.car", "model", "corrola");
+    palace1.addEdge("managedBy", john);
+    corrola.addEdge("owner", john);
+
+This will create a table `V_manager` in the `public` (default) schema. Table `V_house` is in the `continent` schema and table `V_car`
+is in the `fleet` schema.
+For the `managedBy` edge a `E_managedBy` table is created in the `continent` schema as its `out` vertex `palace1` is in the `continent` schema and
+for the `owner` edge a `E_owner` table is created in the `fleet` schema as its `out` vertex is in the `fleet`schema.
+
+==== Schemas
+
+image:src/main/images/sqlg/schemas.png[image of tinkerpop-classic]
+image:src/main/images/sqlg/continent.png[image of tinkerpop-classic]
+image:src/main/images/sqlg/fleet.png[image of tinkerpop-classic]
+image:src/main/images/sqlg/public.png[image of tinkerpop-classic]
+
+== Indexes
+
+=== Basic indexing
+
+Sqlg supports adding a unique or non-unique index to any property.
+
+To add an index one has to use Sqlg's topology interface.
+
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+    Optional<VertexLabel> personVertexOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
+    Preconditions.checkState(personVertexOptional.isPresent());
+    Optional<PropertyColumn> namePropertyOptional = personVertexOptional.get().getProperty("name");
+    Preconditions.checkState(namePropertyOptional.isPresent());
+    //Create the index
+    Index index = personVertexOptional.get().ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
+
+Outside of creating the index Sqlg has no further direct interaction with the index. However gremlin queries with a
+`has` step will translate to a sql `where` clause. If an index has been created on the property of the `has` step then
+the underlying RDBMS will utilize that index on that property's column.
+
+The index does not need to be created upfront. It can be added any time.

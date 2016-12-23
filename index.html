@@ -32,6 +32,19 @@
 </ul>
 </li>
 <li><a href="#_data_types">Data types</a></li>
+<li><a href="#_architecture">Architecture</a>
+<ul class="sectlevel2">
+<li><a href="#_vertex_tables">Vertex tables</a></li>
+<li><a href="#_edge_tables">Edge tables</a></li>
+<li><a href="#_tinkerpop_modern">TinkerPop-modern</a></li>
+<li><a href="#_namespacing_and_schemas">Namespacing and Schemas</a></li>
+</ul>
+</li>
+<li><a href="#_indexes">Indexes</a>
+<ul class="sectlevel2">
+<li><a href="#_basic_indexing">Basic indexing</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -654,13 +667,160 @@ gremlin&gt;</pre>
 </tr>
 </tbody>
 </table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<code>java.time.LocalTime</code> drops the nano second precision.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_architecture">Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>With the coming of vertex labels to TinkerPop the mapping of TinkerPop&#8217;s graph semantics to that of a RDBMS became natural and useful.</p>
+</div>
+<div class="sect2">
+<h3 id="_vertex_tables">Vertex tables</h3>
+<div class="paragraph">
+<p>Every unique vertex label maps to a table. Vertex tables are prefixed with a <code>V_</code>. i.e. <code>V_Person</code>. The vertex table
+stores the vertex&#8217;s properties.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_edge_tables">Edge tables</h3>
+<div class="paragraph">
+<p>Every unique edge label maps to a table. Edge tables are prefixed with a <code>E_</code>. i.e. <code>E_friend</code>. The edge table stores
+each edge&#8217;s adjacent vertex ids and the edge properties. The column corresponding to each adjacent vertex id (<code>IN</code> and <code>OUT</code>)
+has a foreign key to the adjacent vertex&#8217;s table. The foreign key is optional, instead just an index on the adjacent vertex id
+can be used.</p>
+</div>
+<div class="paragraph">
+<p>From a rdbms' perspective each edge table is the classic <code>many to many</code> join table between vertices.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tinkerpop_modern">TinkerPop-modern</h3>
+<div class="paragraph">
+<p>Taken from <em><a href="http://tinkerpop.apache.org/docs/current/reference/#intro">TinkerPop</a></em></p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="src/main/images/sqlg/tinkerpop-modern-graph.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+<div class="sect3">
+<h4 id="_er_diagram">ER Diagram</h4>
+<div class="paragraph">
+<p><span class="image"><img src="src/main/images/sqlg/tinkerpop-modern-er.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_v_person">V_person</h4>
+<div class="paragraph">
+<p><span class="image"><img src="src/main/images/sqlg/V_person.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_v_software">V_software</h4>
+<div class="paragraph">
+<p><span class="image"><img src="src/main/images/sqlg/V_software.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_e_knows">E_knows</h4>
+<div class="paragraph">
+<p><span class="image"><img src="src/main/images/sqlg/E_knows.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_e_created">E_created</h4>
+<div class="paragraph">
+<p><span class="image"><img src="src/main/images/sqlg/E_created.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_namespacing_and_schemas">Namespacing and Schemas</h3>
+<div class="paragraph">
+<p>Many RDBMS databases have the notion of a <code>schema</code> as a namespace for tables. Sqlg supports schemas
+for vertex labels. Distinct schemas for edge tables are unnecessary as edge tables are created in the schema of the adjacent <code>out</code> vertex.
+By default schemas for vertex tables go into the underlying databases' default schema. For Postgresql, hsqldb and H2 this
+is the <code>public</code> schema.</p>
+</div>
+<div class="paragraph">
+<p>To specify the schema for a label Sqlg uses the dot <code>.</code> notation.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Vertex john = this.sqlgGraph.addVertex(T.label, "manager", "name", "john");
+Vertex palace1 = this.sqlgGraph.addVertex(T.label, "continent.house", "name", "palace1");
+Vertex corrola = this.sqlgGraph.addVertex(T.label, "fleet.car", "model", "corrola");
+palace1.addEdge("managedBy", john);
+corrola.addEdge("owner", john);</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will create a table <code>V_manager</code> in the <code>public</code> (default) schema. Table <code>V_house</code> is in the <code>continent</code> schema and table <code>V_car</code>
+is in the <code>fleet</code> schema.
+For the <code>managedBy</code> edge a <code>E_managedBy</code> table is created in the <code>continent</code> schema as its <code>out</code> vertex <code>palace1</code> is in the <code>continent</code> schema and
+for the <code>owner</code> edge a <code>E_owner</code> table is created in the <code>fleet</code> schema as its <code>out</code> vertex is in the `fleet`schema.</p>
+</div>
+<div class="sect3">
+<h4 id="_schemas">Schemas</h4>
+<div class="paragraph">
+<p><span class="image"><img src="src/main/images/sqlg/schemas.png" alt="image of tinkerpop-classic"></span>
+<span class="image"><img src="src/main/images/sqlg/continent.png" alt="image of tinkerpop-classic"></span>
+<span class="image"><img src="src/main/images/sqlg/fleet.png" alt="image of tinkerpop-classic"></span>
+<span class="image"><img src="src/main/images/sqlg/public.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_indexes">Indexes</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_basic_indexing">Basic indexing</h3>
+<div class="paragraph">
+<p>Sqlg supports adding a unique or non-unique index to any property.</p>
+</div>
+<div class="paragraph">
+<p>To add an index one has to use Sqlg&#8217;s topology interface.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+Optional&lt;VertexLabel&gt; personVertexOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
+Preconditions.checkState(personVertexOptional.isPresent());
+Optional&lt;PropertyColumn&gt; namePropertyOptional = personVertexOptional.get().getProperty("name");
+Preconditions.checkState(namePropertyOptional.isPresent());
+//Create the index
+Index index = personVertexOptional.get().ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Outside of creating the index Sqlg has no further direct interaction with the index. However gremlin queries with a
+<code>has</code> step will translate to a sql <code>where</code> clause. If an index has been created on the property of the <code>has</code> step then
+the underlying RDBMS will utilize that index on that property&#8217;s column.</p>
+</div>
+<div class="paragraph">
+<p>The index does not need to be created upfront. It can be added any time.</p>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
 Version 1.3.3<br>
-Last updated 2016-12-15 13:08:19 +02:00
+Last updated 2016-12-23 20:50:21 +02:00
 </div>
 </div>
 </body>
