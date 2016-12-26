@@ -28,11 +28,12 @@ public class AsciiDoctor {
             attributes.setBackend("html5");
             attributes.setStyleSheetName("asciidoctor-default.css");
             //the left toc don't work with these css
-//            attributes.setStyleSheetName("volnitsky.css");
+//            attributes.setStyleSheetName("volnitsky/volnitsky.css");
 //            attributes.setStylesDir("./volnitsky");
-//            attributes.setStyleSheetName("flask.css");
+//            attributes.setStyleSheetName("flask/flask.css");
 //            attributes.setStylesDir("./flask");
             attributes.setTableOfContents2(Placement.LEFT);
+            attributes.setSourceHighlighter("highlightjs");
 
             Options options = new Options();
             options.setAttributes(attributes);

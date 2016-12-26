@@ -146,21 +146,9 @@ The configuration object requires the following properties.
 
 In the case of Postgresql the database must already exist.
 
-=== Tests
+=== Java
 
-If you want to run the TinkerPop tests on Postgresql you need to create the various databases that are used.
-
-.These are,
- g1
- g2
- readGraph
- standard
- temp
- temp1
- temp2
- subgraph
- prototype
- target
+this that voilla //TODO
 
 === Gremlin Console
 
@@ -438,24 +426,19 @@ Taken from 'http://tinkerpop.apache.org/docs/current/reference/#intro[TinkerPop]
 
 image:src/main/images/sqlg/tinkerpop-modern-graph.png[image of tinkerpop-classic]
 
-==== ER Diagram
-
+.ER Diagram
 image:src/main/images/sqlg/tinkerpop-modern-er.png[image of tinkerpop-classic]
 
-==== V_person
-
+.V_person
 image:src/main/images/sqlg/V_person.png[image of tinkerpop-classic]
 
-==== V_software
-
+.V_software
 image:src/main/images/sqlg/V_software.png[image of tinkerpop-classic]
 
-==== E_knows
-
+.E_knows
 image:src/main/images/sqlg/E_knows.png[image of tinkerpop-classic]
 
-==== E_created
-
+.E_created
 image:src/main/images/sqlg/E_created.png[image of tinkerpop-classic]
 
 === Namespacing and Schemas
@@ -467,42 +450,357 @@ is the `public` schema.
 
 To specify the schema for a label Sqlg uses the dot `.` notation.
 
-    Vertex john = this.sqlgGraph.addVertex(T.label, "manager", "name", "john");
-    Vertex palace1 = this.sqlgGraph.addVertex(T.label, "continent.house", "name", "palace1");
-    Vertex corrola = this.sqlgGraph.addVertex(T.label, "fleet.car", "model", "corrola");
+[source,java,options="nowrap"]
+----
+@Test
+public void testElementsInSchema() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Manager", "name", "john"); # <1>
+    Vertex palace1 = this.sqlgGraph.addVertex(T.label, "continent.House", "name", "palace1"); # <2>
+    Vertex corrola = this.sqlgGraph.addVertex(T.label, "fleet.Car", "model", "corrola"); # <3>
     palace1.addEdge("managedBy", john);
     corrola.addEdge("owner", john);
+    this.sqlgGraph.tx().commit();
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Manager").count().next().intValue()); # <4>
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("House").count().next().intValue()); # <5>
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("continent.House").count().next().intValue()); <6>
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Car").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("fleet.Car").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("managedBy").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("owner").count().next().intValue());
+}
+----
+<1> 'Manager' will be in the default 'public' schema.
+<2> 'House' will be in the 'continent' schema.
+<3> 'Car' will be in the 'fleet' schema.
+<4> Vertices in the public schema do not need to be qualified with the schema.
+<5> Vertices not in the public schema must be qualified with its schema. In this case 'House' will not be found.
+<6> As 'House' is qualified with the 'continent' schema it will be found.
 
-This will create a table `V_manager` in the `public` (default) schema. Table `V_house` is in the `continent` schema and table `V_car`
-is in the `fleet` schema.
-For the `managedBy` edge a `E_managedBy` table is created in the `continent` schema as its `out` vertex `palace1` is in the `continent` schema and
-for the `owner` edge a `E_owner` table is created in the `fleet` schema as its `out` vertex is in the `fleet`schema.
+Table `V_manager` is in the `public` (default) schema. +
+Table `V_house` is in the `continent` schema. +
+Table `V_car` is in the `fleet` schema. +
+Table `E_managedBy` is in the `continent` schema as its `out` vertex `palace1` is in the `continent` schema. +
+Table `E_owner` is in the `fleet` schema as its `out` vertex is in the `fleet`schema.
 
-==== Schemas
-
+.postgresql schemas
 image:src/main/images/sqlg/schemas.png[image of tinkerpop-classic]
 image:src/main/images/sqlg/continent.png[image of tinkerpop-classic]
 image:src/main/images/sqlg/fleet.png[image of tinkerpop-classic]
 image:src/main/images/sqlg/public.png[image of tinkerpop-classic]
 
+==== Edge label
+
+An edge label can have many different out vertex labels.
+This means that its possible for an edge label to be stored in multiple schemas and tables.
+One for each distinct out vertex label. Gremlin queries will work as per normal.
+However it is possible to target the edges per out vertex schema directly.
+
+.eg.
+[source,java,options="nowrap"]
+----
+@Test
+public void testEdgeAcrossSchema() {
+    Vertex a = this.sqlgGraph.addVertex(T.label, "A.A");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "B.B");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "C.C");
+    a.addEdge("specialEdge", b);
+    b.addEdge("specialEdge", c);
+    this.sqlgGraph.tx().commit();
+    assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("specialEdge").count().next().intValue()); # <1>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("A.specialEdge").count().next().intValue()); # <2>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("B.specialEdge").count().next().intValue()); # <3>
+}
+----
+<1> Query 'specialEdge'
+<2> Query 'specialEdge' with out vertex labels in the 'A' schema.
+<3> Query 'specialEdge' with out vertex labels in the 'B' schema.
+
+=== Topology
+
+Sqlg stores the graph's topology information in the graph itself as a graph.
+The topology is stored in the `sqlg_schema` schema.
+
+.UML diagram of Sqlg's topology.
+image:src/main/images/sqlg/sqlg_topology_uml.png[image of tinkerpop-classic]
+
+TinkerPop has no notion of schema or topology. However any TinkerPop graph has an implicit schema.
+Sqlg manages the schema as a first class construct.
+
+Sqlg follows the normal TinkerPop semantics in that the schema does not need to be defined upfront.
+Every graph modification first checks to see if the element's schema (label,name) exists.
+If not, it will create the element's schema. For `Postgresql` this works well as it supports transactional schema creation/modification.
+
+[WARNING]
+Hsqldb and H2 database do not support transactional schema creation/modification. They will both silently commit the
+transaction and continue. This breaks the user's transaction boundaries. For both Hsqldb and H2 it is recommended to
+create the schema upfront.
+
+It is possible to query and traverse the topology as a normal TinkerPop graph.
+To query the topology the `TopologyStrategy` is used. To facilitate ease of use, `SqlgGraph.topology()` method is added to enable the strategy.
+Being able to query the topology is helpful to understand a graph's structure.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showTopologyTraversals() {
+    final GraphReader gryoReader = GryoReader.build().create();
+    try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/tinkerpop-modern.kryo")) {
+        gryoReader.readGraph(stream, this.sqlgGraph);
+    } catch (IOException e) {
+        Assert.fail(e.getMessage());
+    }
+    System.out.println("//All vertex labels");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .forEachRemaining(
+                    v -> System.out.println(v.<String>value(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME))
+            );
+
+    System.out.println("//All edge labels");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+            .forEachRemaining(
+                    v -> System.out.println(v.<String>value(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME))
+            );
+
+    System.out.println("//'person' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "person")
+            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'software' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "software")
+            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'created' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "created")
+            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'knows' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "knows")
+            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+}
+----
+
+    //All vertex labels
+    person
+    software
+    //All edge labels
+    knows
+    created
+    //'person' properties
+    name : STRING
+    age : INTEGER
+    //'software' properties
+    name : STRING
+    lang : STRING
+    //'created' properties
+    weight : DOUBLE
+    //'knows' properties
+    weight : DOUBLE
+
+
+==== Topology eager creation
+
+It is often useful to create the topology upfront. The topology creation api is accessed via the `Topology` object.
+It is a singleton. `Topology topology = sqlgGraph.getTopology();`
+To create new topology objects use the `ensure` methods. They will return the a topology object representing the specific
+topology element. i.e. `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index` or `GlobalUniqueIndex`
+
+.eg
+[source,java,options="nowrap"]
+----
+@Test
+public void createModernTopology() {
+    Topology topology = this.sqlgGraph.getTopology();
+    VertexLabel personVertexLabel = topology.ensureVertexLabelExist("public", "person", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+        put("age", PropertyType.INTEGER);
+    }});
+    VertexLabel softwareVertexLabel = topology.ensureVertexLabelExist("public", "software", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+        put("lang", PropertyType.STRING);
+    }});
+    EdgeLabel createdEdgeLabel = personVertexLabel.ensureEdgeLabelExist("created", softwareVertexLabel, new HashMap<String, PropertyType>() {{
+        put("weight", PropertyType.DOUBLE);
+    }});
+    EdgeLabel knowsEdgeLabel = personVertexLabel.ensureEdgeLabelExist("knows", personVertexLabel, new HashMap<String, PropertyType>() {{
+        put("weight", PropertyType.DOUBLE);
+    }});
+    this.sqlgGraph.tx().commit();
+}
+----
+
+[source,java,options="nowrap"]
+----
+@Test
+public void generalTopologyCreationWithSchema() {
+    Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("Humans");
+    VertexLabel personVertexLabel = schema.ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+        put("date", PropertyType.LOCALDATE);
+    }});
+    this.sqlgGraph.tx().commit();
+}
+----
+
+Sqlg keeps an in-memory cache of the graphs entire topology. It is possible query this cache directly.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void queryCache() {
+    loadModern();
+    Optional<Schema> publicSchema = this.sqlgGraph.getTopology().getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema());
+    assertTrue(publicSchema.isPresent());
+    Optional<VertexLabel> personVertexLabel = publicSchema.get().getVertexLabel("person");
+    assertTrue(personVertexLabel.isPresent());
+    Optional<EdgeLabel> createEdgeLabel = personVertexLabel.get().getOutEdgeLabel("created");
+    assertTrue(createEdgeLabel.isPresent());
+    Optional<EdgeLabel> knowsEdgeLabel = personVertexLabel.get().getOutEdgeLabel("knows");
+    assertTrue(knowsEdgeLabel.isPresent());
+
+    Optional<PropertyColumn> namePropertyColumn = personVertexLabel.get().getProperty("name");
+    assertTrue(namePropertyColumn.isPresent());
+    assertEquals(PropertyType.STRING, namePropertyColumn.get().getPropertyType());
+    Optional<PropertyColumn> agePropertyColumn = personVertexLabel.get().getProperty("age");
+    assertTrue(agePropertyColumn.isPresent());
+    assertEquals(PropertyType.INTEGER, agePropertyColumn.get().getPropertyType());
+    Optional<PropertyColumn> weightPropertyColumn = createEdgeLabel.get().getProperty("weight");
+    assertTrue(weightPropertyColumn.isPresent());
+    assertEquals(PropertyType.DOUBLE, weightPropertyColumn.get().getPropertyType());
+}
+----
+
 == Indexes
 
 === Basic indexing
 
-Sqlg supports adding a unique or non-unique index to any property.
+Sqlg supports adding a unique or non-unique index to any property or properties.
 
 To add an index one has to use Sqlg's topology interface.
 
-    this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-    Optional<VertexLabel> personVertexOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
-    Preconditions.checkState(personVertexOptional.isPresent());
-    Optional<PropertyColumn> namePropertyOptional = personVertexOptional.get().getProperty("name");
-    Preconditions.checkState(namePropertyOptional.isPresent());
-    //Create the index
-    Index index = personVertexOptional.get().ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
+[source,java,options="nowrap"]
+----
+@Test
+public void testIndex() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+    }});
+    Optional<PropertyColumn> namePropertyOptional = personVertexLabel.getProperty("name");
+    assertTrue(namePropertyOptional.isPresent());
+    Index index = personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    List<Vertex> johns = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("name", "John")
+            .toList();
+    assertEquals(1, johns.size());
+}
+----
+
+It is possible to create composite indexes.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testCompositeIndex() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        put("firstName", PropertyType.STRING);
+        put("lastName", PropertyType.STRING);
+    }});
+    personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, new ArrayList<>(personVertexLabel.getProperties().values()));
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Person", "firstName", "John", "lastName", "Smith");
+    List<Vertex> johnSmiths = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("firstName", "John")
+            .has("lastName", "Smith")
+            .toList();
+    assertEquals(1, johnSmiths.size());
+}
+----
 
 Outside of creating the index Sqlg has no further direct interaction with the index. However gremlin queries with a
-`has` step will translate to a sql `where` clause. If an index has been created on the property of the `has` step then
-the underlying RDBMS will utilize that index on that property's column.
+`HasStep` targeting a property with an index on it will translate to a sql `where` clause on that property and
+the underlying RDBMS will utilize the index.
 
 The index does not need to be created upfront. It can be added any time.
+
+.postgresql V_Person sql definition
+image:src/main/images/sqlg/V_Person_name_index.png[image of tinkerpop-classic]
+
+=== Global unique indexing
+
+Global unique indexing is a way of specifying that multiple properties across different labels are unique.
+For every `GlobalUniqueIndex` Sqlg maintains a separate table with a unique index defined on it.
+Every property that partakes in the GlobalUniqueIndex will have its value duplicated in this table.
+These tables are kept in the `gui_schema`
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testPersonAndDogDoNotHaveTheSameName() {
+    Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+    }};
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties);
+    VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Dog", properties);
+    PropertyColumn personName = personVertexLabel.getProperty("name").get();
+    PropertyColumn dogName = dogVertexLabel.getProperty("name").get();
+    this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<PropertyColumn>() {{
+        add(personName);
+        add(dogName);
+    }});
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "Tyson");
+    try {
+        //This will fail
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "Tyson");
+        fail("Duplicate key violation suppose to prevent this from executing");
+    } catch (RuntimeException e) {
+        //swallow
+        this.sqlgGraph.tx().rollback();
+    }
+}
+----
+
+GlobalUniqueIndexes do not support composite indexes.
