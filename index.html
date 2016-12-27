@@ -51,6 +51,18 @@
 <ul class="sectlevel2">
 <li><a href="#_optimization">Optimization</a></li>
 <li><a href="#_predicates">Predicates</a></li>
+<li><a href="#_order">Order</a></li>
+<li><a href="#_repeatstep">RepeatStep</a></li>
+<li><a href="#_optionalstep">OptionalStep</a></li>
+<li><a href="#_range">Range</a></li>
+<li><a href="#_limit">Limit</a></li>
+</ul>
+</li>
+<li><a href="#_batch_mode">Batch Mode</a>
+<ul class="sectlevel2">
+<li><a href="#_normal_batch_mode">Normal batch mode</a></li>
+<li><a href="#_streaming_batch_mode">Streaming batch mode</a></li>
+<li><a href="#_bulk_edge_creation">Bulk edge creation</a></li>
 </ul>
 </li>
 </ul>
@@ -712,6 +724,20 @@ stores the vertex&#8217;s properties.</p>
 each edge&#8217;s adjacent vertex ids and the edge properties. The column corresponding to each adjacent vertex id (<code>IN</code> and <code>OUT</code>)
 has a foreign key to the adjacent vertex&#8217;s table. The foreign key is optional, instead just an index on the adjacent vertex id
 can be used.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+    <code>sqlg.properties</code> <code>implement.foreign.keys = false</code><br>
+    Edge foreign keys have a significant impact on performance.<br>
+    Edge foreign keys are enabled by default.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>From a rdbms' perspective each edge table is the classic <code>many to many</code> join table between vertices.</p>
@@ -1704,7 +1730,7 @@ public void showSearchOnLocalDateTime() {
 <div class="listingblock">
 <div class="title">sql</div>
 <div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">SELECT
+<pre class="highlightjs highlight nowrap"><code class="language-sql" data-lang="sql">SELECT
 	"public"."V_Person"."ID" AS "alias1",
 	"public"."V_Person"."born" AS "alias2",
 	"public"."V_Person"."name" AS "alias3"
@@ -1714,10 +1740,560 @@ WHERE
 	( "public"."V_Person"."born" &gt;= ?) AND ( "public"."V_Person"."born" &lt; ?)</code></pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_order">Order</h3>
+<div class="paragraph">
+<p>Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
+If not then order the ordering occurs in java via the OrderGlobalStep as per normal.</p>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre></pre>
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void testOrderBy() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "a");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "b");
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "c");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "a");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "b");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "c");
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; result = this.sqlgGraph.traversal().V().hasLabel("A")
+            .order().by("name", Order.incr).by("surname", Order.decr)
+            .toList();
+
+    assertEquals(6, result.size());
+    assertEquals(a3, result.get(0));
+    assertEquals(a2, result.get(1));
+    assertEquals(a1, result.get(2));
+    assertEquals(b3, result.get(3));
+    assertEquals(b2, result.get(4));
+    assertEquals(b1, result.get(5));
+}</code></pre>
 </div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql" data-lang="sql">SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."surname" AS "alias2",
+	"public"."V_A"."name" AS "alias3"
+FROM
+	"public"."V_A"
+ORDER BY
+	 "alias3" ASC,
+	 "alias2" DESC</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_repeatstep">RepeatStep</h3>
+<div class="paragraph">
+<p>Sqlg optimizes the <code>RepeatStep</code> so long as the <code>until</code> modulator is <strong>not</strong> present.
+<code>RepeatStep</code> can be optimized with the modulator <code>emit</code> and <code>times</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void showRepeat() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex peterski = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peterski");
+    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul");
+    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+    Vertex russia = this.sqlgGraph.addVertex(T.label, "Country", "name", "Russia");
+    Vertex washington = this.sqlgGraph.addVertex(T.label, "City", "name", "Washington");
+    john.addEdge("lives", usa);
+    peterski.addEdge("lives", russia);
+    usa.addEdge("capital", washington);
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .emit().times(2).repeat(__.out("lives", "capital"))
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>[John, USA, Washington]
+[John]
+[Peterski]
+[Paul]
+[John, USA]
+[Peterski, Russia]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql" data-lang="sql">SELECT
+	"public"."V_City"."ID" AS "alias1",
+	"public"."V_City"."name" AS "alias2",
+	"public"."V_Person"."ID" AS "alias3",
+	"public"."V_Person"."name" AS "alias4",
+	"public"."V_Country"."ID" AS "alias5",
+	"public"."V_Country"."name" AS "alias6",
+	"public"."E_lives"."ID" AS "alias7"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
+	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" <b class="conum">(1)</b>
+
+SELECT
+	"public"."V_Country"."ID" AS "alias1",
+	"public"."V_Country"."name" AS "alias2",
+	"public"."V_Person"."ID" AS "alias3",
+	"public"."V_Person"."name" AS "alias4",
+	"public"."E_lives"."ID" AS "alias5"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" <b class="conum">(2)</b>
+
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person" <b class="conum">(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Get the <em>Cities</em> to emit.</p>
+</li>
+<li>
+<p>Get the <em>Countries</em> to emit.</p>
+</li>
+<li>
+<p>Get the <em>Persons</em> to emit.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_optionalstep">OptionalStep</h3>
+<div class="paragraph">
+<p>Sqlg optimizes the OptionalStep.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void testOptionalNested() {
+    Vertex google = this.sqlgGraph.addVertex(T.label, "Company", "name", "Google");
+    Vertex apple = this.sqlgGraph.addVertex(T.label, "Company", "name", "Apple");
+    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+    Vertex england = this.sqlgGraph.addVertex(T.label, "Country", "name", "England");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "City", "name", "New York");
+    google.addEdge("activeIn", usa);
+    google.addEdge("activeIn", england);
+    usa.addEdge("capital", newYork);
+    this.sqlgGraph.tx().commit();
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal()
+            .V()
+            .hasLabel("Company")
+            .optional(
+                    out().optional(
+                            out()
+                    )
+            )
+            .path()
+            .toList();
+    paths.forEach(p -&gt; System.out.println(p.toString()));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>[v[public.Company:::1], v[public.Country:::1], v[public.City:::1]]
+[v[public.Company:::2]]
+[v[public.Company:::1], v[public.Country:::2]]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql" data-lang="sql">SELECT
+	"public"."V_City"."ID" AS "alias1",
+	"public"."V_City"."name" AS "alias2",
+	"public"."V_Company"."ID" AS "alias3",
+	"public"."V_Company"."name" AS "alias4",
+	"public"."V_Country"."ID" AS "alias5",
+	"public"."V_Country"."name" AS "alias6"
+FROM
+	"public"."V_Company" INNER JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
+	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" <b class="conum">(1)</b>
+
+SELECT
+	"public"."V_Country"."ID" AS "alias1",
+	"public"."V_Country"."name" AS "alias2",
+	"public"."V_Company"."ID" AS "alias3",
+	"public"."V_Company"."name" AS "alias4"
+FROM
+	"public"."V_Company" INNER JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" LEFT JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O"
+WHERE
+	("public"."E_capital"."public.Country__O" IS NULL) <b class="conum">(2)</b>
+
+SELECT
+	"public"."V_Company"."ID" AS "alias1",
+	"public"."V_Company"."name" AS "alias2"
+FROM
+	"public"."V_Company" LEFT JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O"
+WHERE
+	("public"."E_activeIn"."public.Company__O" IS NULL) <b class="conum">(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Get the <em>Cities</em></p>
+</li>
+<li>
+<p>Get the <em>Countries</em> that do not have <em>Cities</em></p>
+</li>
+<li>
+<p>Get the <em>Companies</em> that do not have <em>Countries</em></p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_range">Range</h3>
+<div class="paragraph">
+<p>Sqlg optimizes the <code>RangeGlobalStep</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void testRangeOnVertexLabels() {
+    for (int i = 0; i &lt; 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    List&lt;String&gt; names = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .range(1, 4)
+            .&lt;String&gt;values("name")
+            .toList();
+    assertEquals(3, names.size());
+    assertEquals("person1", names.get(0));
+    assertEquals("person10", names.get(1));
+    assertEquals("person11", names.get(2));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC LIMIT 3 OFFSET 1</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_limit">Limit</h3>
+<div class="paragraph">
+<p>Sqlg optimizes <code>.limit(x)</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void testLimitOnVertexLabels() {
+    for (int i = 0; i &lt; 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    List&lt;String&gt; names = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .limit(3)
+            .&lt;String&gt;values("name")
+            .toList();
+    assertEquals(3, names.size());
+    assertEquals("person0", names.get(0));
+    assertEquals("person1", names.get(1));
+    assertEquals("person10", names.get(2));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC LIMIT 3 OFFSET 0</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_batch_mode">Batch Mode</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Sqlg supports 3 distinct batch modes. Normal, streaming and streaming with lock. Batch modes are only implemented on Postgresql.
+Batch mode is activated on the transaction object itself. After every <code>commit</code>/<code>flush</code> the batchMode needs to be reactivated.</p>
+</div>
+<div class="paragraph">
+<p>Sqlg introduces an extra method on the transaction, <code>flush()</code>.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>In normal batch mode <code>flush()</code> will send all the data to Postgresql, assign id(s) and clear the cache.</p>
+</li>
+<li>
+<p>In streaming mode <code>flush()</code> will close the OutputStream that the data has been written to.</p>
+</li>
+<li>
+<p>In streaming mode with lock <code>flush()</code> will close the OutputStream that the data has been written to and assign id(s).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The Postgresql <em><a href="https://www.postgresql.org/docs/current/static/sql-copy.html">copy</a></em> command is used to bulk insert data.</p>
+</div>
+<div class="sect2">
+<h3 id="_normal_batch_mode">Normal batch mode</h3>
+<div class="paragraph">
+<p>In normal batch mode the standard TinkerPop modification api can be used. Normal batch mode caches all modifications in memory
+and on <code>commit()</code> or <code>flush()</code> sends the modifications to the server.</p>
+</div>
+<div class="paragraph">
+<p>Because all modifications are held in memory it is important to call <code>commit()</code> or <code>flush()</code> to prevent an <code>OutOfMemoryError</code>.</p>
+</div>
+<div class="paragraph">
+<p>In batch mode vertices and edges returned from <code>Graph.addVertex</code> and <code>vertex.addEdge</code> respectively do <strong>not</strong> yet have their id(s) assigned to them.
+This is because the new vertices and edges are cached in memory and are only sent to Postgresql on <code>commit()</code> or <code>flush()</code>.
+After <code>commit()</code> or <code>flush()</code> the new vertices and edges have their id(s) assigned.</p>
+</div>
+<div class="paragraph">
+<p>The transaction must be manually placed in normal batch mode. i.e. <code>Graph.tx().normalBatchModeOn()</code> must occur before any batch processing.
+After every <code>commit()</code> or <code>flush()</code> the transaction reverts to a regular transaction and must be placed in normal batch mode again
+for batch processing to continue.</p>
+</div>
+<div class="paragraph">
+<p>Vertices and edges can be created and updated and removed as per normal making normal batch mode very convenient.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Sqlg does not query the cache. If a query is executed while in batch mode the batch is first flushed.
+Take care not to query the graph often while in batch mode as flushing often will defeat the purpose of batching in the first place.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Create 10 000 000 Persons each with a car. 20 000 000 vertices and 10 000 000 edges in total.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void showNormalBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    this.sqlgGraph.tx().normalBatchModeOn();
+    for (int i = 1; i &lt;= 10_000_000; i++) {
+        Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + i);
+        Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
+        person.addEdge("drives", car);
+        if (i % 100_000 == 0) { <b class="conum">(1)</b>
+            this.sqlgGraph.tx().commit();
+            this.sqlgGraph.tx().normalBatchModeOn();
+        }
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>To preserve memory commit or flush every so often</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>Time taken: 0:06:36.253</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output with implement.foreign.keys = false</div>
+<div class="content">
+<pre>Time taken: 0:02:33.313</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">memory</div>
+<p><span class="image"><img src="src/main/images/sqlg/normalBatchModeMemory.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_streaming_batch_mode">Streaming batch mode</h3>
+<div class="paragraph">
+<p>Streaming batch writes any new vertex or edge immediately to Postgresql via its <code>stdin</code> api. I.e. the data is written
+directly to a Postgresql jdbc driver OutputStream.</p>
+</div>
+<div class="paragraph">
+<p>Streaming batch mode does <strong>not</strong> use the <code>Graph.addVertex</code> method. Instead <code>Graph.streamVertex</code> is defined.</p>
+</div>
+<div class="paragraph">
+<p>The transaction must be placed in streaming batch mode manually before any streaming batch modification can happen. <code>Graph.tx().streamingBatchModeOn()</code>
+After every <code>commit()</code> or <code>flush()</code> the transaction reverts to normal mode and must be placed into streaming batch mode again
+for streaming batch mode to continue.</p>
+</div>
+<div class="paragraph">
+<p>The benefit of streaming mode is that the memory consumption is very low as nothing is cached. It is also somewhat faster than
+the normal batch mode (+/- 25% faster).</p>
+</div>
+<div class="paragraph">
+<p>However the caveat is that, per transaction/thread only one label/table can be written between consecutive calls to <code>SqlgTransaction.flush()</code>.
+Further it is not possible to assign an id to the vertex or element. As such the <code>SqlgGraph.streamVertex</code> method returns void.</p>
+</div>
+<div class="paragraph">
+<p>Create 10 000 000 Persons and 10 000 000 cars.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void showStreamingBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    //enable streaming mode
+    this.sqlgGraph.tx().streamingBatchModeOn();
+    for (int i = 1; i &lt;= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
+    }
+    this.sqlgGraph.tx().flush(); <b class="conum">(1)</b>
+    for (int i = 1; i &lt;= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>flushing is needed before starting streaming Car. Only only one label/table can stream at a time.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>Time taken: 0:00:42.014</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">memory</div>
+<p><span class="image"><img src="src/main/images/sqlg/streamingBatchModeMemory.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_bulk_edge_creation">Bulk edge creation</h3>
+<div class="paragraph">
+<p>To create an edge via the normal api a handle to the <code>Vertex</code> is needed.
+This is not always the case. In particula if the <code>SqlgGraph.streamVertex</code> api is used no handle to the <code>Vertex</code> is returned.</p>
+</div>
+<div class="paragraph">
+<p>For this scenario there is a bulk edge creation method.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">    public &lt;L, R&gt; void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair&lt;String, String&gt; idFields, Collection&lt;Pair&lt;L, R&gt;&gt; uids) {</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>outLabel</code> and <code>inLabel</code> specifies the out and in vertex labels that the edges will be between.</p>
+</li>
+<li>
+<p><code>edgeLabel</code> is the label of the edges to be created.</p>
+</li>
+<li>
+<p><code>idFields</code> specifies the fields that uniquely identify the out and in vertex.</p>
+</li>
+<li>
+<p><code>uids</code> are the actual unique identifies for each out/in vertex pairing.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Sqlg will then first copy the <code>uids</code> into a temporary table. Then it joins the temporary table on the out and in vertex tables
+to retrieve the in and out ids.
+These ids are then inserted into the edge table.
+All this happens on Postgresql, having minimal processing and memory impact on the java process.</p>
+</div>
+<div class="paragraph">
+<p>The unique identifiers do have to be kept in memory.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void showBulkEdgeCreation() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    int count = 0;
+    for (int i = 1; i &lt;= 10; i++) {
+        List&lt;Pair&lt;String, String&gt;&gt; identifiers = new ArrayList&lt;&gt;();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int j = 1; j &lt;= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + count, "personUid", String.valueOf(count));
+        }
+        this.sqlgGraph.tx().flush();
+        for (int j = 1; j &lt;= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + count, "carUid", String.valueOf(count));
+            identifiers.add(Pair.of(String.valueOf(count), String.valueOf(count++)));
+        }
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.bulkAddEdges("Person", "Car", "drives", Pair.of("personUid", "carUid"), identifiers);
+        this.sqlgGraph.tx().commit();
+    }
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}</code></pre>
 </div>
 </div>
 </div>
@@ -1727,7 +2303,7 @@ WHERE
 <div id="footer">
 <div id="footer-text">
 Version 1.3.3<br>
-Last updated 2016-12-27 16:02:48 +02:00
+Last updated 2016-12-27 22:43:07 +02:00
 </div>
 </div>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.9.1/styles/github.min.css">

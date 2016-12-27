@@ -430,6 +430,11 @@ each edge's adjacent vertex ids and the edge properties. The column correspondin
 has a foreign key to the adjacent vertex's table. The foreign key is optional, instead just an index on the adjacent vertex id
 can be used.
 
+[NOTE]
+    `sqlg.properties` `implement.foreign.keys = false` +
+    Edge foreign keys have a significant impact on performance. +
+    Edge foreign keys are enabled by default.
+
 From a rdbms' perspective each edge table is the classic `many to many` join table between vertices.
 
 === TinkerPop-modern
@@ -1156,7 +1161,7 @@ public void showSearchOnLocalDateTime() {
 ----
 
 .sql
-[source,java,options="nowrap"]
+[source,sql,options="nowrap"]
 ----
 SELECT
 	"public"."V_Person"."ID" AS "alias1",
@@ -1167,4 +1172,456 @@ FROM
 WHERE
 	( "public"."V_Person"."born" >= ?) AND ( "public"."V_Person"."born" < ?)
 ----
+
+=== Order
+
+Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
+If not then order the ordering occurs in java via the OrderGlobalStep as per normal.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testOrderBy() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "a");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "b");
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "c");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "a");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "b");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "c");
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> result = this.sqlgGraph.traversal().V().hasLabel("A")
+            .order().by("name", Order.incr).by("surname", Order.decr)
+            .toList();
+
+    assertEquals(6, result.size());
+    assertEquals(a3, result.get(0));
+    assertEquals(a2, result.get(1));
+    assertEquals(a1, result.get(2));
+    assertEquals(b3, result.get(3));
+    assertEquals(b2, result.get(4));
+    assertEquals(b1, result.get(5));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."surname" AS "alias2",
+	"public"."V_A"."name" AS "alias3"
+FROM
+	"public"."V_A"
+ORDER BY
+	 "alias3" ASC,
+	 "alias2" DESC
+----
+
+=== RepeatStep
+
+Sqlg optimizes the `RepeatStep` so long as the `until` modulator is *not* present.
+`RepeatStep` can be optimized with the modulator `emit` and `times`.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showRepeat() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex peterski = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peterski");
+    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul");
+    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+    Vertex russia = this.sqlgGraph.addVertex(T.label, "Country", "name", "Russia");
+    Vertex washington = this.sqlgGraph.addVertex(T.label, "City", "name", "Washington");
+    john.addEdge("lives", usa);
+    peterski.addEdge("lives", russia);
+    usa.addEdge("capital", washington);
+    this.sqlgGraph.tx().commit();
+
+    List<Path> paths = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .emit().times(2).repeat(__.out("lives", "capital"))
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}
+----
+
+.output
+----
+[John, USA, Washington]
+[John]
+[Peterski]
+[Paul]
+[John, USA]
+[Peterski, Russia]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_City"."ID" AS "alias1",
+	"public"."V_City"."name" AS "alias2",
+	"public"."V_Person"."ID" AS "alias3",
+	"public"."V_Person"."name" AS "alias4",
+	"public"."V_Country"."ID" AS "alias5",
+	"public"."V_Country"."name" AS "alias6",
+	"public"."E_lives"."ID" AS "alias7"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
+	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" # <1>
+
+SELECT
+	"public"."V_Country"."ID" AS "alias1",
+	"public"."V_Country"."name" AS "alias2",
+	"public"."V_Person"."ID" AS "alias3",
+	"public"."V_Person"."name" AS "alias4",
+	"public"."E_lives"."ID" AS "alias5"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" # <2>
+
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person" # <3>
+----
+<1> Get the 'Cities' to emit.
+<2> Get the 'Countries' to emit.
+<3> Get the 'Persons' to emit.
+
+=== OptionalStep
+
+Sqlg optimizes the OptionalStep.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testOptionalNested() {
+    Vertex google = this.sqlgGraph.addVertex(T.label, "Company", "name", "Google");
+    Vertex apple = this.sqlgGraph.addVertex(T.label, "Company", "name", "Apple");
+    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+    Vertex england = this.sqlgGraph.addVertex(T.label, "Country", "name", "England");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "City", "name", "New York");
+    google.addEdge("activeIn", usa);
+    google.addEdge("activeIn", england);
+    usa.addEdge("capital", newYork);
+    this.sqlgGraph.tx().commit();
+    List<Path> paths = this.sqlgGraph.traversal()
+            .V()
+            .hasLabel("Company")
+            .optional(
+                    out().optional(
+                            out()
+                    )
+            )
+            .path()
+            .toList();
+    paths.forEach(p -> System.out.println(p.toString()));
+}
+----
+
+.output
+----
+[v[public.Company:::1], v[public.Country:::1], v[public.City:::1]]
+[v[public.Company:::2]]
+[v[public.Company:::1], v[public.Country:::2]]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_City"."ID" AS "alias1",
+	"public"."V_City"."name" AS "alias2",
+	"public"."V_Company"."ID" AS "alias3",
+	"public"."V_Company"."name" AS "alias4",
+	"public"."V_Country"."ID" AS "alias5",
+	"public"."V_Country"."name" AS "alias6"
+FROM
+	"public"."V_Company" INNER JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
+	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" # <1>
+
+SELECT
+	"public"."V_Country"."ID" AS "alias1",
+	"public"."V_Country"."name" AS "alias2",
+	"public"."V_Company"."ID" AS "alias3",
+	"public"."V_Company"."name" AS "alias4"
+FROM
+	"public"."V_Company" INNER JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" LEFT JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O"
+WHERE
+	("public"."E_capital"."public.Country__O" IS NULL) # <2>
+
+SELECT
+	"public"."V_Company"."ID" AS "alias1",
+	"public"."V_Company"."name" AS "alias2"
+FROM
+	"public"."V_Company" LEFT JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O"
+WHERE
+	("public"."E_activeIn"."public.Company__O" IS NULL) # <3>
+----
+<1> Get the 'Cities'
+<2> Get the 'Countries' that do not have 'Cities'
+<3> Get the 'Companies' that do not have 'Countries'
+
+
+=== Range
+
+Sqlg optimizes the `RangeGlobalStep`
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testRangeOnVertexLabels() {
+    for (int i = 0; i < 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    List<String> names = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .range(1, 4)
+            .<String>values("name")
+            .toList();
+    assertEquals(3, names.size());
+    assertEquals("person1", names.get(0));
+    assertEquals("person10", names.get(1));
+    assertEquals("person11", names.get(2));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC LIMIT 3 OFFSET 1
+----
+
+=== Limit
+
+Sqlg optimizes `.limit(x)`
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testLimitOnVertexLabels() {
+    for (int i = 0; i < 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    List<String> names = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .limit(3)
+            .<String>values("name")
+            .toList();
+    assertEquals(3, names.size());
+    assertEquals("person0", names.get(0));
+    assertEquals("person1", names.get(1));
+    assertEquals("person10", names.get(2));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC LIMIT 3 OFFSET 0
+----
+
+== Batch Mode
+
+Sqlg supports 3 distinct batch modes. Normal, streaming and streaming with lock. Batch modes are only implemented on Postgresql.
+Batch mode is activated on the transaction object itself. After every `commit`/`flush` the batchMode needs to be reactivated.
+
+Sqlg introduces an extra method on the transaction, `flush()`.
+
+* In normal batch mode `flush()` will send all the data to Postgresql, assign id(s) and clear the cache.
+* In streaming mode `flush()` will close the OutputStream that the data has been written to.
+* In streaming mode with lock `flush()` will close the OutputStream that the data has been written to and assign id(s).
+
+The Postgresql 'https://www.postgresql.org/docs/current/static/sql-copy.html[copy]' command is used to bulk insert data.
+
+=== Normal batch mode
+
+In normal batch mode the standard TinkerPop modification api can be used. Normal batch mode caches all modifications in memory
+and on `commit()` or `flush()` sends the modifications to the server.
+
+Because all modifications are held in memory it is important to call `commit()` or `flush()` to prevent an `OutOfMemoryError`.
+
+In batch mode vertices and edges returned from `Graph.addVertex` and `vertex.addEdge` respectively do **not** yet have their id(s) assigned to them.
+This is because the new vertices and edges are cached in memory and are only sent to Postgresql on `commit()` or `flush()`.
+After `commit()` or `flush()` the new vertices and edges have their id(s) assigned.
+
+The transaction must be manually placed in normal batch mode. i.e. `Graph.tx().normalBatchModeOn()` must occur before any batch processing.
+After every `commit()` or `flush()` the transaction reverts to a regular transaction and must be placed in normal batch mode again
+for batch processing to continue.
+
+Vertices and edges can be created and updated and removed as per normal making normal batch mode very convenient.
+
+[NOTE]
+Sqlg does not query the cache. If a query is executed while in batch mode the batch is first flushed.
+Take care not to query the graph often while in batch mode as flushing often will defeat the purpose of batching in the first place.
+
+Create 10 000 000 Persons each with a car. 20 000 000 vertices and 10 000 000 edges in total.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showNormalBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    this.sqlgGraph.tx().normalBatchModeOn();
+    for (int i = 1; i <= 10_000_000; i++) {
+        Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + i);
+        Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
+        person.addEdge("drives", car);
+        if (i % 100_000 == 0) { # <1>
+            this.sqlgGraph.tx().commit();
+            this.sqlgGraph.tx().normalBatchModeOn();
+        }
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}
+----
+<1> To preserve memory commit or flush every so often
+
+.output
+----
+Time taken: 0:06:36.253
+----
+
+.output with implement.foreign.keys = false
+----
+Time taken: 0:02:33.313
+----
+
+.memory
+image:src/main/images/sqlg/normalBatchModeMemory.png[image of tinkerpop-classic]
+
+=== Streaming batch mode
+
+Streaming batch writes any new vertex or edge immediately to Postgresql via its `stdin` api. I.e. the data is written
+directly to a Postgresql jdbc driver OutputStream.
+
+Streaming batch mode does **not** use the `Graph.addVertex` method. Instead `Graph.streamVertex` is defined.
+
+The transaction must be placed in streaming batch mode manually before any streaming batch modification can happen. `Graph.tx().streamingBatchModeOn()`
+After every `commit()` or `flush()` the transaction reverts to normal mode and must be placed into streaming batch mode again
+for streaming batch mode to continue.
+
+The benefit of streaming mode is that the memory consumption is very low as nothing is cached. It is also somewhat faster than
+the normal batch mode (+/- 25% faster).
+
+However the caveat is that, per transaction/thread only one label/table can be written between consecutive calls to `SqlgTransaction.flush()`.
+Further it is not possible to assign an id to the vertex or element. As such the `SqlgGraph.streamVertex` method returns void.
+
+Create 10 000 000 Persons and 10 000 000 cars.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showStreamingBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    //enable streaming mode
+    this.sqlgGraph.tx().streamingBatchModeOn();
+    for (int i = 1; i <= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
+    }
+    this.sqlgGraph.tx().flush(); # <1>
+    for (int i = 1; i <= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}
+----
+<1> flushing is needed before starting streaming Car. Only only one label/table can stream at a time.
+
+.output
+----
+Time taken: 0:00:42.014
+----
+
+.memory
+image:src/main/images/sqlg/streamingBatchModeMemory.png[image of tinkerpop-classic]
+
+=== Bulk edge creation
+
+To create an edge via the normal api a handle to the `Vertex` is needed.
+This is not always the case. In particula if the `SqlgGraph.streamVertex` api is used no handle to the `Vertex` is returned.
+
+For this scenario there is a bulk edge creation method.
+
+[source,java,options="nowrap"]
+----
+    public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
+----
+
+ * `outLabel` and `inLabel` specifies the out and in vertex labels that the edges will be between.
+ * `edgeLabel` is the label of the edges to be created.
+ * `idFields` specifies the fields that uniquely identify the out and in vertex.
+ * `uids` are the actual unique identifies for each out/in vertex pairing.
+
+Sqlg will then first copy the `uids` into a temporary table. Then it joins the temporary table on the out and in vertex tables
+to retrieve the in and out ids.
+These ids are then inserted into the edge table.
+All this happens on Postgresql, having minimal processing and memory impact on the java process.
+
+The unique identifiers do have to be kept in memory.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showBulkEdgeCreation() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    int count = 0;
+    for (int i = 1; i <= 10; i++) {
+        List<Pair<String, String>> identifiers = new ArrayList<>();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int j = 1; j <= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + count, "personUid", String.valueOf(count));
+        }
+        this.sqlgGraph.tx().flush();
+        for (int j = 1; j <= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + count, "carUid", String.valueOf(count));
+            identifiers.add(Pair.of(String.valueOf(count), String.valueOf(count++)));
+        }
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.bulkAddEdges("Person", "Car", "drives", Pair.of("personUid", "carUid"), identifiers);
+        this.sqlgGraph.tx().commit();
+    }
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}
 ----
