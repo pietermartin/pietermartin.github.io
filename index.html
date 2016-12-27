@@ -1053,8 +1053,23 @@ weight : DOUBLE</pre>
 <div class="paragraph">
 <p>It is often useful to create the topology upfront. The topology creation api is accessed via the <code>Topology</code> object.
 It is a singleton. <code>Topology topology = sqlgGraph.getTopology();</code>
-To create new topology objects use the <code>ensure</code> methods. They will return the a topology object representing the specific
+To create new topology objects use the <code>ensureXXX</code> methods. They will return the a topology object representing the specific
 topology element. i.e. <code>Schema</code>, <code>VertexLabel</code>, <code>EdgeLabel</code>, <code>PropertyColumn</code>, <code>Index</code> or <code>GlobalUniqueIndex</code></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The <code>ensureXXX</code> methods will create the topology object if it does not exists.
+If it does exist it will simply return the relevant topology object.
+On any topology object one can call <code>isCommitted</code> or <code>isUncommitted</code> to check the state of the object.
+<code>committed</code> indicates that it already exists. <code>uncommitted</code> indicates that it has been created in the current active transaction.
+</td>
+</tr>
+</table>
 </div>
 <div class="listingblock">
 <div class="title">eg</div>
@@ -2303,7 +2318,7 @@ public void showBulkEdgeCreation() {
 <div id="footer">
 <div id="footer-text">
 Version 1.3.3<br>
-Last updated 2016-12-27 22:43:07 +02:00
+Last updated 2016-12-27 23:32:12 +02:00
 </div>
 </div>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.9.1/styles/github.min.css">

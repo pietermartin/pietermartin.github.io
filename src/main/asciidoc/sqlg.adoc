@@ -670,8 +670,14 @@ weight : DOUBLE
 
 It is often useful to create the topology upfront. The topology creation api is accessed via the `Topology` object.
 It is a singleton. `Topology topology = sqlgGraph.getTopology();`
-To create new topology objects use the `ensure` methods. They will return the a topology object representing the specific
+To create new topology objects use the `ensureXXX` methods. They will return the a topology object representing the specific
 topology element. i.e. `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index` or `GlobalUniqueIndex`
+
+[NOTE]
+The `ensureXXX` methods will create the topology object if it does not exists.
+If it does exist it will simply return the relevant topology object.
+On any topology object one can call `isCommitted` or `isUncommitted` to check the state of the object.
+`committed` indicates that it already exists. `uncommitted` indicates that it has been created in the current active transaction.
 
 .eg
 [source,java,options="nowrap"]
