@@ -19,7 +19,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded i
 
 == TinkerPop supported features
 
-Sqlg version 1.3.3 runs on TinkerPop 3.2.3
+Sqlg version 1.3.3-SNAPSHOT runs on TinkerPop 3.2.3
 
 Sqlg passes TinkerPop's `StructureStandardSuite` and `ProcessStandardSuite` test suites.
 
@@ -79,21 +79,21 @@ Sqlg passes TinkerPop's `StructureStandardSuite` and `ProcessStandardSuite` test
  <dependency>
      <groupId>org.umlg</groupId>
      <artifactId>sqlg-postgres</artifactId>
-     <version>1.3.3</version>
+     <version>1.3.3-SNAPSHOT</version>
  </dependency>
 
 .HSQLDB
  <dependency>
      <groupId>org.umlg</groupId>
      <artifactId>sqlg-hsqldb</artifactId>
-     <version>1.3.3</version>
+     <version>1.3.3-SNAPSHOT</version>
  </dependency>
 
 .H2
  <dependency>
      <groupId>org.umlg</groupId>
      <artifactId>sqlg-h2</artifactId>
-     <version>1.3.3</version>
+     <version>1.3.3-SNAPSHOT</version>
  </dependency>
 
 This will include `gremlin-groovy`. If you have no need for that then use the following coordinates.
@@ -102,21 +102,21 @@ This will include `gremlin-groovy`. If you have no need for that then use the fo
  <dependency>
      <groupId>org.umlg</groupId>
      <artifactId>sqlg-postgres-dialect</artifactId>
-     <version>1.3.3</version>
+     <version>1.3.3-SNAPSHOT</version>
  </dependency>
 
 .HSQLDB
  <dependency>
      <groupId>org.umlg</groupId>
      <artifactId>sqlg-hsqldb-dialect</artifactId>
-     <version>1.3.3</version>
+     <version>1.3.3-SNAPSHOT</version>
  </dependency>
 
 .H2
  <dependency>
      <groupId>org.umlg</groupId>
      <artifactId>sqlg-h2-dialect</artifactId>
-     <version>1.3.3</version>
+     <version>1.3.3-SNAPSHOT</version>
  </dependency>
 
 === Start
@@ -172,11 +172,11 @@ If you do not connections to the database will remain open and eventually the co
  plugin activated: tinkerpop.server
  plugin activated: tinkerpop.utilities
  plugin activated: tinkerpop.tinkergraph
- gremlin> :install org.umlg sqlg-postgres 1.3.3
+ gremlin> :install org.umlg sqlg-postgres 1.3.3-SNAPSHOT
  log4j:WARN No appenders could be found for logger (org.apache.tinkerpop.gremlin.groovy.util.DependencyGrabber).
  log4j:WARN Please initialize the log4j system properly.
  log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
- ==>Loaded: [org.umlg, sqlg-postgres, 1.3.3]
+ ==>Loaded: [org.umlg, sqlg-postgres, 1.3.3-SNAPSHOT]
  gremlin> :plugin list
  ==>tinkerpop.server[active]
  ==>tinkerpop.gephi
@@ -210,7 +210,7 @@ If you do not connections to the database will remain open and eventually the co
  log4j:WARN No appenders could be found for logger (org.apache.tinkerpop.gremlin.groovy.util.DependencyGrabber).
  log4j:WARN Please initialize the log4j system properly.
  log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
- ==>Loaded: [org.umlg, sqlg-hsqldb, 1.3.3]
+ ==>Loaded: [org.umlg, sqlg-hsqldb, 1.3.3-SNAPSHOT]
  gremlin> :plugin list
  ==>tinkerpop.server[active]
  ==>tinkerpop.gephi
