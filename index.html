@@ -63,6 +63,7 @@
 <li><a href="#_normal_batch_mode">Normal batch mode</a></li>
 <li><a href="#_streaming_batch_mode">Streaming batch mode</a></li>
 <li><a href="#_bulk_edge_creation">Bulk edge creation</a></li>
+<li><a href="#_streaming_with_lock_batch_mode">Streaming with lock batch mode</a></li>
 </ul>
 </li>
 </ul>
@@ -106,7 +107,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded i
 <h2 id="_tinkerpop_supported_features">TinkerPop supported features</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Sqlg version 1.3.3 runs on TinkerPop 3.2.3</p>
+<p>Sqlg version 1.3.3-SNAPSHOT runs on TinkerPop 3.2.3</p>
 </div>
 <div class="paragraph">
 <p>Sqlg passes TinkerPop&#8217;s <code>StructureStandardSuite</code> and <code>ProcessStandardSuite</code> test suites.</p>
@@ -248,7 +249,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded i
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-postgres&lt;/artifactId&gt;
-    &lt;version&gt;1.3.3&lt;/version&gt;
+    &lt;version&gt;1.3.3-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -258,7 +259,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded i
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-hsqldb&lt;/artifactId&gt;
-    &lt;version&gt;1.3.3&lt;/version&gt;
+    &lt;version&gt;1.3.3-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -268,7 +269,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded i
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-h2&lt;/artifactId&gt;
-    &lt;version&gt;1.3.3&lt;/version&gt;
+    &lt;version&gt;1.3.3-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -281,7 +282,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded i
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-postgres-dialect&lt;/artifactId&gt;
-    &lt;version&gt;1.3.3&lt;/version&gt;
+    &lt;version&gt;1.3.3-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -291,7 +292,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded i
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-hsqldb-dialect&lt;/artifactId&gt;
-    &lt;version&gt;1.3.3&lt;/version&gt;
+    &lt;version&gt;1.3.3-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -301,7 +302,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded i
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-h2-dialect&lt;/artifactId&gt;
-    &lt;version&gt;1.3.3&lt;/version&gt;
+    &lt;version&gt;1.3.3-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -389,11 +390,11 @@ If you do not connections to the database will remain open and eventually the co
 plugin activated: tinkerpop.server
 plugin activated: tinkerpop.utilities
 plugin activated: tinkerpop.tinkergraph
-gremlin&gt; :install org.umlg sqlg-postgres 1.3.3
+gremlin&gt; :install org.umlg sqlg-postgres 1.3.3-SNAPSHOT
 log4j:WARN No appenders could be found for logger (org.apache.tinkerpop.gremlin.groovy.util.DependencyGrabber).
 log4j:WARN Please initialize the log4j system properly.
 log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
-==&gt;Loaded: [org.umlg, sqlg-postgres, 1.3.3]
+==&gt;Loaded: [org.umlg, sqlg-postgres, 1.3.3-SNAPSHOT]
 gremlin&gt; :plugin list
 ==&gt;tinkerpop.server[active]
 ==&gt;tinkerpop.gephi
@@ -433,7 +434,7 @@ gremlin&gt; :install org.umlg sqlg-hsqldb 1.3.3
 log4j:WARN No appenders could be found for logger (org.apache.tinkerpop.gremlin.groovy.util.DependencyGrabber).
 log4j:WARN Please initialize the log4j system properly.
 log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
-==&gt;Loaded: [org.umlg, sqlg-hsqldb, 1.3.3]
+==&gt;Loaded: [org.umlg, sqlg-hsqldb, 1.3.3-SNAPSHOT]
 gremlin&gt; :plugin list
 ==&gt;tinkerpop.server[active]
 ==&gt;tinkerpop.gephi
@@ -2076,7 +2077,7 @@ ORDER BY
 <div class="sectionbody">
 <div class="paragraph">
 <p>Sqlg supports 3 distinct batch modes. Normal, streaming and streaming with lock. Batch modes are only implemented on Postgresql.
-Batch mode is activated on the transaction object itself. After every <code>commit</code>/<code>flush</code> the batchMode needs to be reactivated.</p>
+Batch mode is activated on the transaction object itself. After every <code>commit</code> the batchMode needs to be reactivated.</p>
 </div>
 <div class="paragraph">
 <p>Sqlg introduces an extra method on the transaction, <code>flush()</code>.</p>
@@ -2112,12 +2113,12 @@ This is because the new vertices and edges are cached in memory and are only sen
 After <code>commit()</code> or <code>flush()</code> the new vertices and edges have their id(s) assigned.</p>
 </div>
 <div class="paragraph">
-<p>The transaction must be manually placed in normal batch mode. i.e. <code>Graph.tx().normalBatchModeOn()</code> must occur before any batch processing.
-After every <code>commit()</code> or <code>flush()</code> the transaction reverts to a regular transaction and must be placed in normal batch mode again
+<p>The transaction must be manually placed in normal batch mode. i.e. <code>SqlgGraph.tx().normalBatchModeOn()</code> must occur before any batch processing.
+After every <code>commit()</code> the transaction reverts to a regular transaction and must be placed in normal batch mode again
 for batch processing to continue.</p>
 </div>
 <div class="paragraph">
-<p>Vertices and edges can be created and updated and removed as per normal making normal batch mode very convenient.</p>
+<p>Vertices and edges can be created and updated and removed as per normal making normal batch mode easy to use.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -2126,11 +2127,18 @@ for batch processing to continue.</p>
 <div class="title">Note</div>
 </td>
 <td class="content">
-Sqlg does not query the cache. If a query is executed while in batch mode the batch is first flushed.
-Take care not to query the graph often while in batch mode as flushing often will defeat the purpose of batching in the first place.
+Sqlg does not query the cache. If a gremlin query is executed while in batch mode the batch is first flushed.
+Take care not to query the graph while in batch mode as flushing often will defeat the purpose of batching in the first place.
 </td>
 </tr>
 </table>
+</div>
+<div class="listingblock">
+<div class="title">custom api</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">sqlgGraph.tx().normalBatchModeOn();
+sqlgGraph.tx().flush();</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>Create 10 000 000 Persons each with a car. 20 000 000 vertices and 10 000 000 edges in total.</p>
@@ -2147,8 +2155,7 @@ public void showNormalBatchMode() {
         Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
         person.addEdge("drives", car);
         if (i % 100_000 == 0) { <b class="conum">(1)</b>
-            this.sqlgGraph.tx().commit();
-            this.sqlgGraph.tx().normalBatchModeOn();
+            this.sqlgGraph.tx().flush(); <b class="conum">(1)</b>
         }
     }
     this.sqlgGraph.tx().commit();
@@ -2160,18 +2167,18 @@ public void showNormalBatchMode() {
 <div class="colist arabic">
 <ol>
 <li>
-<p>To preserve memory commit or flush every so often</p>
+<p>To preserve memory <code>commit</code> or <code>flush</code> every so often.</p>
 </li>
 </ol>
 </div>
 <div class="listingblock">
-<div class="title">output</div>
+<div class="title">output without edge foreign keys</div>
 <div class="content">
-<pre>Time taken: 0:06:36.253</pre>
+<pre>Time taken: 0:05:48.889</pre>
 </div>
 </div>
 <div class="listingblock">
-<div class="title">output with implement.foreign.keys = false</div>
+<div class="title">output with edge foreign keys</div>
 <div class="content">
 <pre>Time taken: 0:02:33.313</pre>
 </div>
@@ -2188,11 +2195,11 @@ public void showNormalBatchMode() {
 directly to a Postgresql jdbc driver OutputStream.</p>
 </div>
 <div class="paragraph">
-<p>Streaming batch mode does <strong>not</strong> use the <code>Graph.addVertex</code> method. Instead <code>Graph.streamVertex</code> is defined.</p>
+<p>Streaming batch mode does <strong>not</strong> use the <code>Graph.addVertex</code> method. Instead <code>SqlgGraph.streamVertex</code> is defined.</p>
 </div>
 <div class="paragraph">
-<p>The transaction must be placed in streaming batch mode manually before any streaming batch modification can happen. <code>Graph.tx().streamingBatchModeOn()</code>
-After every <code>commit()</code> or <code>flush()</code> the transaction reverts to normal mode and must be placed into streaming batch mode again
+<p>The transaction must be placed in streaming batch mode manually before any streaming batch modification can happen. <code>SqlgGraph.tx().streamingBatchModeOn()</code>
+After every <code>commit()</code> the transaction reverts to normal mode and must be placed into streaming batch mode again
 for streaming batch mode to continue.</p>
 </div>
 <div class="paragraph">
@@ -2202,6 +2209,12 @@ the normal batch mode (+/- 25% faster).</p>
 <div class="paragraph">
 <p>However the caveat is that, per transaction/thread only one label/table can be written between consecutive calls to <code>SqlgTransaction.flush()</code>.
 Further it is not possible to assign an id to the vertex or element. As such the <code>SqlgGraph.streamVertex</code> method returns void.</p>
+</div>
+<div class="listingblock">
+<div class="title">custom api</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">sqlgGraph.tx().streamingBatchModeOn();</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>Create 10 000 000 Persons and 10 000 000 cars.</p>
@@ -2256,7 +2269,7 @@ This is not always the case. In particula if the <code>SqlgGraph.streamVertex</c
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">    public &lt;L, R&gt; void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair&lt;String, String&gt; idFields, Collection&lt;Pair&lt;L, R&gt;&gt; uids) {</code></pre>
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">public &lt;L, R&gt; void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair&lt;String, String&gt; idFields, Collection&lt;Pair&lt;L, R&gt;&gt; uids) {</code></pre>
 </div>
 </div>
 <div class="ulist">
@@ -2282,7 +2295,19 @@ These ids are then inserted into the edge table.
 All this happens on Postgresql, having minimal processing and memory impact on the java process.</p>
 </div>
 <div class="paragraph">
-<p>The unique identifiers do have to be kept in memory.</p>
+<p>The unique identifiers still have to be kept in memory, but its is not necessary to have the actual out and in vertices in memory.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The unique identifiers do not need to be the vertices&#8217;s id. It can be any property as long as it is unique.
+</td>
+</tr>
+</table>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -2307,9 +2332,89 @@ public void showBulkEdgeCreation() {
         this.sqlgGraph.tx().commit();
     }
     stopWatch.stop();
+    System.out.println("Time taken: " + stopWatch.toString());
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output (with edge foreign keys)</div>
+<div class="content">
+<pre>Time taken: 0:10:03.397</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output (without edge foreign keys)</div>
+<div class="content">
+<pre>Time taken: 0:03:45.951</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">memory</div>
+<p><span class="image"><img src="src/main/images/sqlg/bulkAddEdgesMemory.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_streaming_with_lock_batch_mode">Streaming with lock batch mode</h3>
+<div class="paragraph">
+<p>Streaming with lock batch mode is similar to streaming batch mode. The difference being that the label/table being written to is
+locked. Locking the table ensures that no concurrent changes will occur on the table. This allows Sqlg to query the id sequence and
+assigned ids to the elements.</p>
+</div>
+<div class="paragraph">
+<p>This means that the normal <code>Vertex vertex = graph.addVertex(...)</code> method can be used. This is useful if a pointer to the new vertices are needed.</p>
+</div>
+<div class="paragraph">
+<p>The transaction must be placed into streaming with lock batch mode manually before any streaming with lock batch modification can happen.
+<code>SqlgGraph.tx().streamingWithLockBatchModeOn()</code> After every <code>commit()</code> the transaction reverts to normal mode and must
+be placed into streaming batch mode again for streaming batch mode to continue.</p>
+</div>
+<div class="listingblock">
+<div class="title">custom api</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">sqlgGraph.tx().streamingWithLockBatchModeOn();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void showStreamingWithLockBulkEdgeCreation() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    int count = 0;
+    for (int i = 1; i &lt;= 10; i++) {
+        List&lt;Vertex&gt; persons = new ArrayList&lt;&gt;();
+        this.sqlgGraph.tx().streamingWithLockBatchModeOn();
+        for (int j = 1; j &lt;= 1_000_000; j++) {
+            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + count);
+            persons.add(person);
+        }
+        this.sqlgGraph.tx().flush();
+        List&lt;Vertex&gt; cars = new ArrayList&lt;&gt;();
+        for (int j = 1; j &lt;= 1_000_000; j++) {
+            Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + count++);
+            cars.add(car);
+        }
+        this.sqlgGraph.tx().flush();
+        Iterator&lt;Vertex&gt; carIter = cars.iterator();
+        for (Vertex person : persons) {
+            person.addEdge("drives", carIter.next());
+        }
+        this.sqlgGraph.tx().commit();
+    }
+    stopWatch.stop();
     System.out.println(stopWatch.toString());
 }</code></pre>
 </div>
+</div>
+<div class="listingblock">
+<div class="title">output without edge foreign keys</div>
+<div class="content">
+<pre>Time taken: 0:02:42.363</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">memory</div>
+<p><span class="image"><img src="src/main/images/sqlg/streamingBatchModeWithLockMemory.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 </div>
 </div>
@@ -2318,7 +2423,7 @@ public void showBulkEdgeCreation() {
 <div id="footer">
 <div id="footer-text">
 Version 1.3.3<br>
-Last updated 2016-12-27 23:32:12 +02:00
+Last updated 2016-12-28 12:34:25 +02:00
 </div>
 </div>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.9.1/styles/github.min.css">
