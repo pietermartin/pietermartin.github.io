@@ -231,6 +231,10 @@ If you do not connections to the database will remain open and eventually the co
  ==>808
  gremlin>
 
+ [NOTE]
+ If it is the first time to install sqlg, then you need to restart the gremlin console.
+ If not the class-loaders are confused and can not load Sqlg's sqlg.plugin
+
 == Data types
 
 .Table Data types
