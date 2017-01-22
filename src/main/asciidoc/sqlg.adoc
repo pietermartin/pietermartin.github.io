@@ -762,6 +762,42 @@ public void queryCache() {
 <6> Use the 'person' VertexLabel to get its 'name' property. Properties are represented by the `PropertyColumn` class.
 <7> On the `PropertyColumn` object one can get the `PropertyType`. PropertyType is an enum representing all data types supported by Sqlg.
 
+=== Validation
+
+Sqlg has basic support to validate its topology.
+
+If a user manipulates the schema outside of Sqlg then Sqlg's topology will be out of sync with the database.
+
+To validate the topology `sql.properties` must have `validate.topology = true`. The validation code only runs when the graph is started.
+It will not prevent the graph from starting up but will log a warning.
+The validation errors can be accesses via `sqlgGraph.getTopology().getValidationErrors()`
+
+.eg
+[source,java,options="nowrap"]
+----
+@Test
+public void testVertexLabelDoesNotExist() throws Exception {
+    this.sqlgGraph.addVertex(T.label, "A.A");
+    this.sqlgGraph.tx().commit();
+    Connection conn = this.sqlgGraph.tx().getConnection();
+    try (Statement statement = conn.createStatement()) {
+        statement.execute("DROP TABLE " + "\"A\".\"V_A\" CASCADE ");
+        this.sqlgGraph.tx().commit();
+    } catch (SQLException e) {
+        fail(e.getMessage());
+    }
+    this.sqlgGraph.close();
+    try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+        assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+    }
+}
+----
+
+.output
+----
+WARN  2017-01-22 18:23:40,185 [main] org.umlg.sqlg.structure.SqlgStartupManager: A does not exist
+----
+
 == Indexes
 
 === Basic indexing

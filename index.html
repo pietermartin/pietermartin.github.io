@@ -38,6 +38,7 @@
 <li><a href="#_tinkerpop_modern">TinkerPop-modern</a></li>
 <li><a href="#_namespacing_and_schemas">Namespacing and Schemas</a></li>
 <li><a href="#_topology">Topology</a></li>
+<li><a href="#_validation">Validation</a></li>
 </ul>
 </li>
 <li><a href="#_indexes">Indexes</a>
@@ -454,6 +455,13 @@ gremlin&gt; graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
 gremlin&gt; g.V().count()
 ==&gt;808
 gremlin&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>[NOTE]
+If it is the first time to install sqlg, then you need to restart the gremlin console.
+If not the class-loaders are confused and can not load Sqlg's sqlg.plugin</pre>
 </div>
 </div>
 </div>
@@ -1189,6 +1197,47 @@ public void queryCache() {
 <p>On the <code>PropertyColumn</code> object one can get the <code>PropertyType</code>. PropertyType is an enum representing all data types supported by Sqlg.</p>
 </li>
 </ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_validation">Validation</h3>
+<div class="paragraph">
+<p>Sqlg has basic support to validate its topology.</p>
+</div>
+<div class="paragraph">
+<p>If a user manipulates the schema outside of Sqlg then Sqlg&#8217;s topology will be out of sync with the database.</p>
+</div>
+<div class="paragraph">
+<p>To validate the topology <code>sql.properties</code> must have <code>validate.topology = true</code>. The validation code only runs when the graph is started.
+It will not prevent the graph from starting up but will log a warning.
+The validation errors can be accesses via <code>sqlgGraph.getTopology().getValidationErrors()</code></p>
+</div>
+<div class="listingblock">
+<div class="title">eg</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java" data-lang="java">@Test
+public void testVertexLabelDoesNotExist() throws Exception {
+    this.sqlgGraph.addVertex(T.label, "A.A");
+    this.sqlgGraph.tx().commit();
+    Connection conn = this.sqlgGraph.tx().getConnection();
+    try (Statement statement = conn.createStatement()) {
+        statement.execute("DROP TABLE " + "\"A\".\"V_A\" CASCADE ");
+        this.sqlgGraph.tx().commit();
+    } catch (SQLException e) {
+        fail(e.getMessage());
+    }
+    this.sqlgGraph.close();
+    try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+        assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>WARN  2017-01-22 18:23:40,185 [main] org.umlg.sqlg.structure.SqlgStartupManager: A does not exist</pre>
 </div>
 </div>
 </div>
@@ -2423,7 +2472,7 @@ public void showStreamingWithLockBulkEdgeCreation() {
 <div id="footer">
 <div id="footer-text">
 Version 1.3.3<br>
-Last updated 2016-12-28 12:34:25 +02:00
+Last updated 2017-01-22 18:24:41 +02:00
 </div>
 </div>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.9.1/styles/github.min.css">
