@@ -27,6 +27,7 @@ public class AsciiDoctor {
             Attributes attributes = new Attributes();
             attributes.setBackend("html5");
             attributes.setStyleSheetName("asciidoctor-default.css");
+            attributes.setDocType("book");
             //the left toc don't work with these css
 //            attributes.setStyleSheetName("volnitsky/volnitsky.css");
 //            attributes.setStylesDir("./volnitsky");
