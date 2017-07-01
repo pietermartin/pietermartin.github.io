@@ -75,6 +75,10 @@ Sqlg passes TinkerPop's `StructureStandardSuite` and `ProcessStandardSuite` test
 - SerializableValues
 - UniformListValues
 
+== Limitations
+
+Postgresql schema, table and column names can not be more than 63 characters long.
+
 == Getting Started
 
 === Maven coordinates
