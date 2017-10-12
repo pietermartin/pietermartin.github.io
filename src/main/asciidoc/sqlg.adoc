@@ -1,7 +1,7 @@
 Sqlg Documentation
 ==================
 Pieter Martin
-v1.3.3, May 2017:
+v1.4.0, October 2017:
 
 'https://github.com/pietermartin/sqlg[*Sqlg*]' is a implementation of 'http://tinkerpop.apache.org/[Apache TinkerPop]' on a 'http://en.wikipedia.org/wiki/Relational_database_management_system[RDBMS]'.
 Currently 'http://www.postgresql.org/[Postgresql]', 'http://hsqldb.org/[HSQLDB]', 'http://h2database.com[H2 database]', 'https://mariadb.org/[MariaDB]' and
